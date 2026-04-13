@@ -9,8 +9,8 @@ public class User {
     private String password;
     private String phoneNumber;
     private double balance = 0;
-    // private List<AuctionSession> myCreatedAuctions;
-    // private List<AuctionSession> myJoinedAuctions;
+    private List<AuctionSession> myCreatedAuctions;
+    private List<AuctionSession> myJoinedAuctions;
     protected User(){};
     public User(String realName, String username, String email, String password, String phoneNumber){
         this.realName = realName;
@@ -19,8 +19,8 @@ public class User {
         this.password = password;
         this.phoneNumber = phoneNumber;
         this.id = genID();
-        // this.myCreatedAuctions = new ArrayList<>();
-        // this.myJoinedAuctions = new ArrayList<>();
+        this.myCreatedAuctions = new ArrayList<>();
+        this.myJoinedAuctions = new ArrayList<>();
     }
     public String getRealName(){
         return this.realName;
@@ -34,12 +34,18 @@ public class User {
     public double getBalance(){
         return this.balance;
     }
-    // public List<AuctionSession> getJoinedAuctionSessions(){
-    //     return this.myJoinedAuctions;
-    // }
-    // public List<AuctionSession> getCreatedAuctionSessions(){
-    //     return this.myCreatedAuctions;
-    // }
+    public List<AuctionSession> getJoinedAuctionSessions(){
+         return this.myJoinedAuctions;
+    }
+    public List<AuctionSession> getCreatedAuctionSessions(){
+         return this.myCreatedAuctions;
+    }
+    public void addCreatedSessions(AuctionSession session){
+        this.myCreatedAuctions.add(session);
+    }
+    public void addJoinedSessions(AuctionSession session){
+        this.myJoinedAuctions.add(session);
+    }
     public void deposit(double amount){
         balance += amount;
     }

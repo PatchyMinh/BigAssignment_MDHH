@@ -4,6 +4,7 @@ import java.time.*;
 import java.util.*;
 
 public class AuctionSession {
+    private User seller;
     final private String sessionID;
     final private double startingPrice;
     final private double incrementStep;
@@ -18,16 +19,20 @@ public class AuctionSession {
     public String getSessionID(){
          return this.sessionID;
     }
-    public AuctionSession(String sessionID, double startingPrice, double incrementStep, int openDays){
+    public AuctionSession(User seller, String sessionID, double startingPrice, double incrementStep, int openDays){
+        this.seller = seller;
         this.sessionID = sessionID;
         this.startingPrice = startingPrice;
         this.incrementStep = incrementStep;
         this.startTime = LocalDateTime.now();
         this.endTime = startTime.plusDays(openDays);
         this.status = Status.PENDING;
+        if (this.seller != null) {
+            this.seller.addCreatedSessions(this); // thêm phiên đấu giá vào lịch sử của người bán
+        }
     }
-    public AuctionSession(String sessionID, double startingPrice){
-        this(sessionID, startingPrice, 0.1, 3);
+    public AuctionSession(User seller, String sessionID, double startingPrice){
+        this(seller, sessionID, startingPrice, 0.1, 3);
     }
     public boolean isValidBid(double amount){
         if (this.status != Status.OPEN) {
@@ -54,7 +59,9 @@ public class AuctionSession {
 
         Bid newBid = new Bid(user, amount);
         bidHistory.add(newBid); // lưu lịch sử bid
-
+        if (!user.getJoinedAuctionSessions().contains(this)) {
+            user.addJoinedSessions(this); // thêm phiên đấu giá vào lịch sử của người bid
+        }
         System.out.println("Người dùng " + user.getUsername() + " đã đấu giá thành công!");
         return true;
     }
