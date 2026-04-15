@@ -1,3 +1,4 @@
+package model;
 public class Electronics extends Items{
     private int warranty;
     private String brand;

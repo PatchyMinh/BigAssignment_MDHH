@@ -1,3 +1,9 @@
+package factory;
+
+import model.Items;
+import model.ItemsAttributes;
+import model.Vehicles;
+
 public class TypeVehicles implements ItemsFactory{
     @Override
     public Items createItems(ItemsAttributes request) {

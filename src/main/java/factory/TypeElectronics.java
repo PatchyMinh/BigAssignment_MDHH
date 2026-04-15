@@ -1,3 +1,9 @@
+package factory;
+
+import model.Electronics;
+import model.Items;
+import model.ItemsAttributes;
+
 public class TypeElectronics implements ItemsFactory{
     @Override
     public Items createItems(ItemsAttributes request) {

@@ -1,24 +1,26 @@
-// package main.java;
+package model;
 import java.util.*;
-import java.security.SecureRandom;
 public class User {
     protected String realName;
     protected String username;
-    protected String id;
+    protected int id;
     protected String email;
+    protected Role role;
     private String password;
     private String phoneNumber;
     private double balance = 0;
+    private double frozenBalance = 0;
     private List<AuctionSession> myCreatedAuctions;
     private List<AuctionSession> myJoinedAuctions;
-    protected User(){};
+    public enum Role {USER, ADMIN};
+    public User(){};
     public User(String realName, String username, String email, String password, String phoneNumber){
+        this.role = Role.USER;
         this.realName = realName;
         this.username = username;
         this.email = email;
         this.password = password;
         this.phoneNumber = phoneNumber;
-        this.id = genID();
         this.myCreatedAuctions = new ArrayList<>();
         this.myJoinedAuctions = new ArrayList<>();
     }
@@ -33,6 +35,15 @@ public class User {
     }
     public double getBalance(){
         return this.balance;
+    }
+    public double getFrozenBalance(){
+        return this.frozenBalance;
+    }
+    public int getID(){
+        return this.id;
+    }
+    public Role getRole(){
+        return this.role;
     }
     public List<AuctionSession> getJoinedAuctionSessions(){
          return this.myJoinedAuctions;
@@ -63,10 +74,16 @@ public class User {
     public void setPassword(String newPassword){ // yêu cầu phải nhập SĐT để xác thực
         this.password = newPassword;
     }
-    private static String genID(){ // gen xâu 8 chữ số
-        SecureRandom secureRandom = new SecureRandom();
-        int randomNumber = secureRandom.nextInt(100000000);
-        return String.format("%08d", randomNumber);
+    public void setID(int id){
+        this.id = id;
     }
-    
+    public void setBalance(double balance) {
+        this.balance = balance;
+    }
+    public void setFrozenBalance(double frozenBalance) {
+        this.frozenBalance = frozenBalance;
+    }
+    public void setRole(Role role) {
+        this.role = role;
+    }
 }

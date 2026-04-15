@@ -1,3 +1,9 @@
+package factory;
+
+import model.Arts;
+import model.Items;
+import model.ItemsAttributes;
+
 public class TypeArts implements ItemsFactory{
     @Override
     public Items createItems(ItemsAttributes request) {

@@ -1,3 +1,4 @@
+package model;
 public class Vehicles extends Items{
     private String brand;
     private int mileage;

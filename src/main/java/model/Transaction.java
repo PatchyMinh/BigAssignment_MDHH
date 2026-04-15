@@ -1,4 +1,4 @@
-// package main.java;
+package model;
 
 public class Transaction {
     public void deposit(User user, double amount){

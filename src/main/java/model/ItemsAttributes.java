@@ -1,3 +1,4 @@
+package model;
 // ItemsAttributes chứa tất cả các thuộc tính đầu vào để tạo Items.
 // Hỗ trợ khắc phục việc tạo nhiều tham số trong Factory.
 // Nhược điểm hiện tại: Có thể tạo ra nhiều giá trị null với các thuộc tính không tương thích.

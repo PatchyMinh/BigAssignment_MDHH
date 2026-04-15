@@ -1,6 +1,7 @@
+package model;
 //Lớp trừu tượng đại diện cho một món hàng cơ bản trong hệ thống đấu giá.
 
-abstract class Items {
+public abstract class Items {
     //Tích hợp tự động sinh UUID hoặc lấy ID từ Database sau.
     //protected String itemID;
     protected String owner;

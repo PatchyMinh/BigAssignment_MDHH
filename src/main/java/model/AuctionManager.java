@@ -1,8 +1,7 @@
-// package main.java;
+package model;
 
 import java.util.*;
 /* 
-
 Mẫu thiết kế áp dụng: "Bill Pugh Singleton - sử dụng một static inner class (lớp tĩnh bên trong). 
 Lớp tĩnh này chỉ được JVM tải vào bộ nhớ và khởi tạo đối tượng khi hàm getInstance() được gọi lần đầu tiên (Lazy Loading),
 đồng thời tận dụng cơ chế nội tại của JVM để đảm bảo an toàn luồng (Thread-safe) mà không gây ảnh hưởng đến hiệu suất.
