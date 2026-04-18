@@ -2,11 +2,11 @@ package model;
 import java.time.LocalDate;
 
 public class Arts extends Items{
-    private String artistName;
-    private LocalDate releaseDate;
+    private final String artistName;
+    private final LocalDate releaseDate;
 
-    public Arts(String owner, double startingPrice, String description, String artistName, LocalDate releaseDate) {
-        super(owner, startingPrice, description);
+    public Arts(int itemID, String owner, double startingPrice, String description, String artistName, LocalDate releaseDate) {
+        super(itemID, owner, startingPrice, description);
         this.artistName = artistName;
         this.releaseDate = releaseDate;
     }
@@ -16,13 +16,6 @@ public class Arts extends Items{
     }
     public LocalDate getReleaseDate() {
         return releaseDate;
-    }
-
-    public void setReleaseDate(LocalDate releaseDate) {
-        this.releaseDate = releaseDate;
-    }
-    public void setArtistName(String artistName) {
-        this.artistName = artistName;
     }
 
     @Override

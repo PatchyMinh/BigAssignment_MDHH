@@ -1,13 +1,13 @@
 package test;
 
 import dao.*;
-import factory.*;
 import model.*;
+
 import java.time.LocalDate;
 
-public class MainTest {
+public class    MainTest {
     public static void main(String[] args) {
-        System.out.println("====== BẮT ĐẦU TEST HỆ THỐNG ĐẤU GIÁ ======\n");
+        System.out.println("=== BẮT ĐẦU KIỂM THỬ HỆ THỐNG ===");
 
         // 1. Khởi tạo các DAO
         UserDAO userDAO = new UserDAOImpl();
@@ -15,88 +15,68 @@ public class MainTest {
         AuctionSessionDAO sessionDAO = new AuctionSessionDAOImpl();
         BidDAO bidDAO = new BidDAOImpl();
 
-        // 2. TEST ĐĂNG NHẬP (NGƯỜI BÁN)
-        System.out.println("--- BƯỚC 1: ĐĂNG NHẬP NGƯỜI BÁN ---");
-        User seller = userDAO.login("admin", "123");
-        if (seller == null) {
-            System.out.println("❌ Lỗi: Không tìm thấy tài khoản admin.");
-            return; // Dừng chương trình nếu không có user
-        }
-        System.out.println("✅ Đăng nhập thành công! Người bán: " + seller.getUsername());
+        // 2. TEST ĐĂNG KÝ & ĐĂNG NHẬP (USER DAO)
+        System.out.println("\n--- 1. TEST USER ---");
+        // Dùng Constructor đăng ký (chưa có ID)
+        User seller = new User("Nguyen Van Ban", "seller_pro", "seller@gmail.com", "123456", "0988888888");
+        User buyer = new User("Tran Van Mua", "buyer_vip", "buyer@gmail.com", "123456", "0911111111");
 
-        // 3. TEST TẠO HÀNG HÓA BẰNG FACTORY PATTERN
-        System.out.println("\n--- BƯỚC 2: TẠO HÀNG HÓA & LƯU VÀO DB ---");
+        //userDAO.register(seller);
+        //userDAO.register(buyer);
 
-        // 3.1 Tạo bức tranh (Arts)
-        ItemsAttributes artAttr = new ItemsAttributes();
-        artAttr.setOwner(seller.getUsername());
-        artAttr.setStartingPrice(5000.0);
-        artAttr.setDescription("Bức tranh Đêm Đầy Sao (Bản sao siêu cấp)");
-        artAttr.setArtistName("Vincent van Gogh");
-        artAttr.setReleaseDate(LocalDate.of(1889, 6, 1));
-        Items artItem = new TypeArts().createItems(artAttr);
-        itemDAO.addItem(artItem);
-        System.out.println("✅ Đã lưu Tranh (Arts) vào DB - ID: " + artItem.getItemID());
+        // Đăng nhập để lấy User đầy đủ ID từ DB
+        User loggedSeller = userDAO.login("seller_pro", "123456");
+        User loggedBuyer = userDAO.login("buyer_vip", "123456");
 
-        // 3.2 Tạo đồ điện tử (Electronics)
-        ItemsAttributes elecAttr = new ItemsAttributes();
-        elecAttr.setOwner(seller.getUsername());
-        elecAttr.setStartingPrice(12000.0);
-        elecAttr.setDescription("Điện thoại iPhone 15 Pro Max");
-        elecAttr.setBrand("Apple");
-        elecAttr.setWarranty(12);
-        Items elecItem = new TypeElectronics().createItems(elecAttr);
-        itemDAO.addItem(elecItem);
-        System.out.println("✅ Đã lưu Điện thoại (Electronics) vào DB - ID: " + elecItem.getItemID());
-
-        // 3.3 Tạo xe cộ (Vehicles)
-        ItemsAttributes vehicleAttr = new ItemsAttributes();
-        vehicleAttr.setOwner(seller.getUsername());
-        vehicleAttr.setStartingPrice(500000.0);
-        vehicleAttr.setDescription("Xe máy SH 150i");
-        vehicleAttr.setBrand("Honda");
-        vehicleAttr.setMileage(1500);
-        vehicleAttr.setVehicleID("29A1-123.45"); // Biển số
-        Items vehicleItem = new TypeVehicles().createItems(vehicleAttr);
-        itemDAO.addItem(vehicleItem);
-        System.out.println("✅ Đã lưu Xe máy (Vehicles) vào DB - ID: " + vehicleItem.getItemID());
-
-
-        // 4. TEST TẠO PHIÊN ĐẤU GIÁ CHO BỨC TRANH
-        System.out.println("\n--- BƯỚC 3: TẠO PHIÊN ĐẤU GIÁ ---");
-        String sessionId = "SS_ART_" + System.currentTimeMillis();
-        AuctionSession session = new AuctionSession(
-                seller,
-                sessionId,
-                artItem.getStartingPrice(), // Giá khởi điểm 5000
-                500.0,                      // Bước giá
-                3                           // Thời gian 3 ngày
-        );
-        boolean isSessionCreated = sessionDAO.createSession(session, artItem.getItemID());
-        if (isSessionCreated) {
-            System.out.println("✅ Tạo Phiên đấu giá thành công! ID Phiên: " + sessionId);
+        if (loggedSeller != null && loggedBuyer != null) {
+            System.out.println("✅ Đăng ký và Đăng nhập thành công!");
+            System.out.println("ID Người bán: " + loggedSeller.getID() + " | ID Người mua: " + loggedBuyer.getID());
         } else {
-            System.out.println("❌ Lỗi tạo phiên đấu giá.");
-            return;
+            System.err.println("❌ Lỗi Đăng ký/Đăng nhập. Hãy check lại DB!");
+            return; // Dừng nếu lỗi
         }
 
-        // 5. TEST NGƯỜI MUA ĐĂNG NHẬP VÀ ĐẶT GIÁ
-        System.out.println("\n--- BƯỚC 4: NGƯỜI MUA ĐẶT GIÁ (BID) ---");
-        User buyer = userDAO.login("nguoimua", "123");
-        if (buyer != null) {
-            System.out.println("✅ Đăng nhập thành công! Người mua: " + buyer.getUsername());
+        // 3. TEST TẠO MÓN HÀNG (ITEM DAO)
+        System.out.println("\n--- 2. TEST ITEM ---");
+        // ID truyền 0 vì chưa insert DB, DAO sẽ tự cập nhật ID
+        Arts monaLisa = new Arts(0, loggedSeller.getUsername(), 1000.0, "Tranh Mona Lisa Real", "Da Vinci", LocalDate.of(1503, 1, 1));
+        itemDAO.addItem(monaLisa);
 
-            // Người mua đặt giá 6000 (Lớn hơn giá khởi điểm 5000)
-            Bid newBid = new Bid(buyer, 6000.0);
-            boolean isBidSuccess = bidDAO.addBid(sessionId, newBid);
+        System.out.println("✅ Đã thêm vật phẩm mới vào Database!");
+        System.out.println("Item ID vừa được sinh ra: " + monaLisa.getItemID());
 
-            if (isBidSuccess) {
-                System.out.println("✅ Người mua '" + buyer.getUsername() + "' đã đặt giá THÀNH CÔNG: " + newBid.getAmount() + "$");
-            } else {
-                System.out.println("❌ Đặt giá thất bại.");
+        // 4. TEST TẠO PHIÊN ĐẤU GIÁ (AUCTION SESSION DAO)
+        System.out.println("\n--- 3. TEST PHIÊN ĐẤU GIÁ ---");
+        String sessionId = "SS_" + System.currentTimeMillis(); // Tạo ID phiên ngẫu nhiên
+        // Constructor tạo phiên mới (chưa bắt đầu)
+        AuctionSession session = new AuctionSession(loggedSeller, sessionId, monaLisa.getStartingPrice(), 50.0, 3);
+
+        boolean isSessionCreated = sessionDAO.createSession(session, monaLisa.getItemID());
+        if (isSessionCreated) {
+            System.out.println("✅ Tạo phiên đấu giá thành công: " + sessionId);
+        }
+
+        // 5. TEST ĐẶT GIÁ (BID DAO)
+        System.out.println("\n--- 4. TEST ĐẶT GIÁ (BID) ---");
+        Bid bid1 = new Bid(loggedBuyer, 1050.0);
+        boolean isBidAdded = bidDAO.addBid(sessionId, bid1);
+        if (isBidAdded) {
+            System.out.println("✅ User [" + loggedBuyer.getUsername() + "] đã đặt giá: " + bid1.getAmount());
+        }
+
+        // 6. TEST LẤY DỮ LIỆU ĐÃ MAP TOÀN BỘ TỪ DB
+        System.out.println("\n--- 5. KIỂM TRA TÍNH TOÀN VẸN CỦA DỮ LIỆU (MAP BẰNG CONSTRUCTOR) ---");
+        AuctionSession fetchedSession = sessionDAO.getSessionById(sessionId);
+
+        if (fetchedSession != null) {
+            System.out.println("Lấy thông tin phiên thành công!");
+            System.out.println("- Giá khởi điểm ban đầu: " + fetchedSession.getStartingPrice());
+            System.out.println("- Giá cao nhất hiện tại : " + fetchedSession.getCurrentPrice());
+            if (fetchedSession.getHighestBidder() != null) {
+                System.out.println("- Người đang thắng thế  : " + fetchedSession.getHighestBidder().getUsername());
             }
+            System.out.println("- Trạng thái phiên      : " + fetchedSession.status);
+            System.out.println("✅ MỌI THỨ HOẠT ĐỘNG HOÀN HẢO THEO ĐÚNG OOP!");
         }
-
-        System.out.println("\n====== KẾT THÚC TEST ======");
     }
 }

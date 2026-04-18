@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAOImpl implements UserDAO {
-    // === PHẦN THÊM MỚI: HÀM ĐĂNG KÝ ===
     @Override
     public boolean register(User user) {
         String sql = "INSERT INTO users (username, password, real_name, email, phone_number, role, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -25,9 +24,9 @@ public class UserDAOImpl implements UserDAO {
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
-                // Lấy ID tự sinh từ MySQL và gán ngược lại cho object user
                 try (ResultSet rs = pstmt.getGeneratedKeys()) {
                     if (rs.next()) {
+                        // Giữ lại setID vì ID do DB sinh ra sau khi object đã được tạo
                         user.setID(rs.getInt(1));
                     }
                 }
@@ -38,6 +37,7 @@ public class UserDAOImpl implements UserDAO {
         }
         return false;
     }
+
     @Override
     public User login(String username, String password) {
         // Dấu ? là tham số sẽ được điền vào sau, giúp chống hack SQL Injection
@@ -54,21 +54,18 @@ public class UserDAOImpl implements UserDAO {
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     // Nếu tìm thấy, nhét dữ liệu từ Database vào đối tượng Java
-                    user = new User();
-                    user.setID(rs.getInt("id"));
-                    user.setUsername(rs.getString("username"));
-                    user.setPassword(rs.getString("password"));
-
-                    // BỔ SUNG CÁC TRƯỜNG MỚI
-                    user.setRealName(rs.getString("real_name"));
-                    user.setEmail(rs.getString("email"));
-                    user.setPhoneNumber(rs.getString("phone_number"));
-
-                    user.setBalance(rs.getDouble("balance"));
-                    user.setFrozenBalance(rs.getDouble("frozen_balance"));
-                    
-                    // Xử lý Enum Role như đã bàn
-                    user.setRole(User.Role.valueOf(rs.getString("role").toUpperCase()));
+                    // Thay vì gọi 10 hàm set, ta truyền tất cả vào Constructor
+                    return new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("real_name"),
+                            rs.getString("email"),
+                            rs.getString("phone_number"),
+                            User.Role.valueOf(rs.getString("role").toUpperCase()),
+                            rs.getDouble("balance"),
+                            rs.getDouble("frozen_balance")
+                    );
                 }
             }
         } catch (SQLException e) {
@@ -89,17 +86,21 @@ public class UserDAOImpl implements UserDAO {
             
             // Duyệt qua từng dòng dữ liệu trả về
             while (rs.next()) {
-                User user = new User();
-                user.setID(rs.getInt("id"));
-                user.setUsername(rs.getString("username"));
-                user.setPassword(rs.getString("password"));
-                user.setBalance(rs.getDouble("balance"));
-                user.setFrozenBalance(rs.getDouble("frozen_balance"));
-                user.setRole(User.Role.valueOf(rs.getString("role").toUpperCase()));
-                userList.add(user);
+                // Truyền tất cả vào constructor tránh bị yếu tố bên ngoài thay đổi dựa vào hàm set
+                userList.add(new User(
+                        rs.getInt("id"),
+                        rs.getString("username"),
+                        rs.getString("password"),
+                        rs.getString("real_name"),
+                        rs.getString("email"),
+                        rs.getString("phone_number"),
+                        User.Role.valueOf(rs.getString("role").toUpperCase()),
+                        rs.getDouble("balance"),
+                        rs.getDouble("frozen_balance")
+                ));
             }
         } catch (SQLException e) {
-            System.out.println("Lỗi khi lấy danh sách User: " + e.getMessage());
+            System.out.println("❌ Lỗi khi lấy danh sách User: " + e.getMessage());
             e.printStackTrace();
         }
         return userList;
@@ -126,7 +127,7 @@ public class UserDAOImpl implements UserDAO {
                 isUpdated = true;
             }
         } catch (SQLException e) {
-            System.out.println("Lỗi khi cập nhật số dư: " + e.getMessage());
+            System.out.println("❌ Lỗi khi cập nhật số dư: " + e.getMessage());
             e.printStackTrace();
         }
         
@@ -143,19 +144,21 @@ public class UserDAOImpl implements UserDAO {
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             // Thêm ký tự % vào 2 đầu để tìm kiếm linh hoạt (Ví dụ: gõ "ali" sẽ ra "alice_seller")
             pstmt.setString(1, "%" + keyword + "%");
-            
+
             try (ResultSet rs = pstmt.executeQuery()) {
                 // Dùng vòng lặp while vì kết quả có thể trả ra nhiều dòng (nhiều user)
                 while (rs.next()) {
-                    User user = new User();
-                    user.setID(rs.getInt("id"));
-                    user.setUsername(rs.getString("username"));
-                    user.setPassword(rs.getString("password"));
-                    user.setBalance(rs.getDouble("balance"));
-                    user.setFrozenBalance(rs.getDouble("frozen_balance"));
-                    user.setRole(User.Role.valueOf(rs.getString("role").toUpperCase()));
-                    // Lấy xong 1 user thì nhét vào danh sách
-                    userList.add(user);
+                    userList.add(new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("real_name"),
+                            rs.getString("email"),
+                            rs.getString("phone_number"),
+                            User.Role.valueOf(rs.getString("role").toUpperCase()),
+                            rs.getDouble("balance"),
+                            rs.getDouble("frozen_balance")
+                    ));
                 }
             }
         } catch (SQLException e) {
@@ -170,25 +173,19 @@ public class UserDAOImpl implements UserDAO {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, id);
-
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    User user = new User();
-                    // Lưu ý: Map đúng các trường như hàm login
-                    user.setID(rs.getInt("id"));
-                    user.setUsername(rs.getString("username"));
-                    user.setPassword(rs.getString("password"));
-
-                    // BỔ SUNG CÁC TRƯỜNG MỚI
-                    user.setRealName(rs.getString("real_name"));
-                    user.setEmail(rs.getString("email"));
-                    user.setPhoneNumber(rs.getString("phone_number"));
-
-                    user.setBalance(rs.getDouble("balance"));
-                    user.setFrozenBalance(rs.getDouble("frozen_balance"));
-                    user.setRole(User.Role.valueOf(rs.getString("role").toUpperCase()));
-
-                    return user;
+                    return new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("real_name"),
+                            rs.getString("email"),
+                            rs.getString("phone_number"),
+                            User.Role.valueOf(rs.getString("role").toUpperCase()),
+                            rs.getDouble("balance"),
+                            rs.getDouble("frozen_balance")
+                    );
                 }
             }
         } catch (SQLException e) {

@@ -1,10 +1,10 @@
 package model;
 public class Electronics extends Items{
-    private int warranty;
-    private String brand;
+    private final int warranty;
+    private final String brand;
 
-    public Electronics(String owner, double startingPrice, String description, int warranty, String brand) {
-        super(owner, startingPrice, description);
+    public Electronics(int itemID, String owner, double startingPrice, String description, int warranty, String brand) {
+        super(itemID, owner, startingPrice, description);
         this.warranty = warranty;
         this.brand = brand;
     }
@@ -14,13 +14,6 @@ public class Electronics extends Items{
     }
     public String getBrand() {
         return brand;
-    }
-
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
-    public void setWarranty(int warranty) {
-        this.warranty = warranty;
     }
 
     @Override

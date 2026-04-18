@@ -16,9 +16,6 @@ public class AuctionSession {
     public enum Status { PENDING, OPEN, CLOSED, CANCELLED }; // một nhóm các hằng số
     public Status status;
 
-    public String getSessionID(){
-         return this.sessionID;
-    }
     public AuctionSession(User seller, String sessionID, double startingPrice, double incrementStep, int openDays){
         this.seller = seller;
         this.sessionID = sessionID;
@@ -34,19 +31,33 @@ public class AuctionSession {
     public AuctionSession(User seller, String sessionID, double startingPrice){
         this(seller, sessionID, startingPrice, 0.1, 3);
     }
-    // Bổ sung Setter
-    public void setCurrentPrice(double price) { this.currentPrice = price; }
-    public void setHighestBidder(User user) { this.highestBidder = user; }
-    public void setStartTime(LocalDateTime time) { this.startTime = time; }
-    public void setEndTime(LocalDateTime time) { this.endTime = time; }
-
-    // Bổ sung các Getter
-    public User getSeller() { return seller; }
+    // Constructor đầy đủ cho DAO khi lấy từ Database
+    public AuctionSession(String sessionID, User seller, double startingPrice, double incrementStep,
+                          double currentPrice, User highestBidder, LocalDateTime startTime,
+                          LocalDateTime endTime, Status status) {
+        this.sessionID = sessionID;
+        this.seller = seller;
+        this.startingPrice = startingPrice;
+        this.incrementStep = incrementStep;
+        this.currentPrice = currentPrice;
+        this.highestBidder = highestBidder;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.status = status;
+    }
+    // Bổ sung Getter
+    public String getSessionID(){
+        return this.sessionID;
+    }
     public double getStartingPrice() { return startingPrice; }
-    public double getIncrementStep() { return incrementStep; }
+    public ArrayList<Bid> getBidHistory() { return bidHistory; }
     public double getCurrentPrice() { return currentPrice; }
-    public LocalDateTime getStartTime() { return startTime; }
+    public double getIncrementStep() { return incrementStep; }
     public LocalDateTime getEndTime() { return endTime; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public Status getStatus() { return status; }
+    public User getHighestBidder() { return highestBidder; }
+    public User getSeller() { return seller; }
 
     public boolean isValidBid(double amount){
         if (this.status != Status.OPEN) {

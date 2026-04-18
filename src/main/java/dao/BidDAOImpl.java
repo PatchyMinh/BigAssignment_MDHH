@@ -12,7 +12,6 @@ public class BidDAOImpl implements BidDAO {
 
     @Override
     public boolean addBid(String sessionId, Bid bid) {
-        // Đổi bidder_id thành user_id
         String sql = "INSERT INTO bids (session_id, user_id, amount, bid_time) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
@@ -24,7 +23,6 @@ public class BidDAOImpl implements BidDAO {
             pstmt.setTimestamp(4, Timestamp.valueOf(bid.getTime()));
 
             return pstmt.executeUpdate() > 0;
-
         } catch (SQLException e) {
             System.out.println("Lỗi khi lưu lượt đặt giá: " + e.getMessage());
             e.printStackTrace();
@@ -44,20 +42,17 @@ public class BidDAOImpl implements BidDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    // Đổi bidder_id thành user_id
                     int userId = rs.getInt("user_id");
                     User bidder = userDAO.getUserById(userId);
-
                     double amount = rs.getDouble("amount");
                     Timestamp bidTime = rs.getTimestamp("bid_time");
 
-                    Bid bid = new Bid(bidder, amount);
-                    bid.setTime(bidTime.toLocalDateTime());
-
-                    bids.add(bid);
+                    // Sử dụng constructor DB để tạo đối tượng thay vì tạo mới rồi setTime
+                    bids.add(new Bid(bidder, amount, bidTime.toLocalDateTime()));
                 }
             }
         } catch (SQLException e) {
+            System.out.println("Lỗi khi lấy danh sách Bid: " + e.getMessage());
             e.printStackTrace();
         }
         return bids;

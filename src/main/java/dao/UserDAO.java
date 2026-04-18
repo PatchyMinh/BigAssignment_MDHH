@@ -3,9 +3,8 @@ import model.User; // Giả sử bạn đã có class User
 import java.util.List;
 
 public interface UserDAO {
-    // Thêm hàm đăng ký mới
-    boolean register(User user);
-
+    // Thêm hàm đăng ký
+    public boolean register(User user);
     // Hàm đăng nhập (trả về đối tượng User nếu đúng, null nếu sai)
     User login(String username, String password);
     
@@ -16,6 +15,5 @@ public interface UserDAO {
     boolean updateBalance(int userId, double newBalance, double newFrozenBalance);
 
     List<User> searchUsers(String keyword);
-
-    User getUserById(int id);
+    public User getUserById(int id);
 }

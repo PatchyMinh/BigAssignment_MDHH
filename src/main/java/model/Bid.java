@@ -12,13 +12,15 @@ public class Bid {
             this.amount = amount;
             this.time = LocalDateTime.now();
         }
+
+        // Constructor đầy đủ cho DAO khi lấy từ Database
+        public Bid(User bidder, double amount, LocalDateTime time) {
+            this.bidder = bidder;
+            this.amount = amount;
+            this.time = time;
+        }
         
         public double getAmount() { return amount; }
         public User getBidder() { return bidder; }
         public LocalDateTime getTime() { return time; }
-
-        // Thêm setTime để gán thời gian từ DB
-        public void setTime(LocalDateTime time) {
-            this.time = time;
-        }
 }

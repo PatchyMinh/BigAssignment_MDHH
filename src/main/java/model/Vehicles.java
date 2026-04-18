@@ -1,11 +1,11 @@
 package model;
 public class Vehicles extends Items{
-    private String brand;
-    private int mileage;
-    private String vehicleID;
+    private final String brand;
+    private final int mileage;
+    private final String vehicleID;
 
-    public Vehicles(String owner, double startingPrice, String description, String brand, int mileage, String vehicleID) {
-        super(owner, startingPrice, description);
+    public Vehicles(int itemID, String owner, double startingPrice, String description, String brand, int mileage, String vehicleID) {
+        super(itemID, owner, startingPrice, description);
         this.brand = brand;
         this.mileage = mileage;
         this.vehicleID = vehicleID;
@@ -19,16 +19,6 @@ public class Vehicles extends Items{
     }
     public int getMileage() {
         return mileage;
-    }
-
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
-    public void setMileage(int mileage) {
-        this.mileage = mileage;
-    }
-    public void setVehicleID(String vehicleID) {
-        this.vehicleID = vehicleID;
     }
 
     @Override

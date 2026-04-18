@@ -9,17 +9,15 @@ public abstract class Items {
     protected String description;
 
 
-    public Items(String owner, double startingPrice, String description) {
-        //this.itemID = UUID.randomUUID().toString();
+    public Items(int itemID, String owner, double startingPrice, String description) {
+        this.itemID = itemID;
         this.owner = owner;
         this.startingPrice = startingPrice;
         this.description = description;
     }
 
-    // Thêm Getter và Setter cho itemID
-    public int getItemID() { return itemID; }
     public void setItemID(int itemID) { this.itemID = itemID; }
-
+    public int getItemID() { return itemID; }
     public String getOwner() {
         return owner;
     }
@@ -28,10 +26,6 @@ public abstract class Items {
     }
     public String getDescription(){
         return description;
-    }
-
-    public void setDescription(String description){
-        this.description = description;
     }
 
     public abstract String showInfo();
