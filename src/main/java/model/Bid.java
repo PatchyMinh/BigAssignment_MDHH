@@ -16,4 +16,9 @@ public class Bid {
         public double getAmount() { return amount; }
         public User getBidder() { return bidder; }
         public LocalDateTime getTime() { return time; }
+
+        // Thêm setTime để gán thời gian từ DB
+        public void setTime(LocalDateTime time) {
+            this.time = time;
+        }
 }

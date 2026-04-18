@@ -34,6 +34,20 @@ public class AuctionSession {
     public AuctionSession(User seller, String sessionID, double startingPrice){
         this(seller, sessionID, startingPrice, 0.1, 3);
     }
+    // Bổ sung Setter
+    public void setCurrentPrice(double price) { this.currentPrice = price; }
+    public void setHighestBidder(User user) { this.highestBidder = user; }
+    public void setStartTime(LocalDateTime time) { this.startTime = time; }
+    public void setEndTime(LocalDateTime time) { this.endTime = time; }
+
+    // Bổ sung các Getter
+    public User getSeller() { return seller; }
+    public double getStartingPrice() { return startingPrice; }
+    public double getIncrementStep() { return incrementStep; }
+    public double getCurrentPrice() { return currentPrice; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public LocalDateTime getEndTime() { return endTime; }
+
     public boolean isValidBid(double amount){
         if (this.status != Status.OPEN) {
             System.out.println("Phiên đấu giá chưa mở hoặc đã kết thúc!");

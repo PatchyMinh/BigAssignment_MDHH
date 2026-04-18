@@ -10,8 +10,8 @@ public class User {
     private String phoneNumber;
     private double balance = 0;
     private double frozenBalance = 0;
-    private List<AuctionSession> myCreatedAuctions;
-    private List<AuctionSession> myJoinedAuctions;
+    private List<AuctionSession> myCreatedAuctions = new ArrayList<>();
+    private List<AuctionSession> myJoinedAuctions = new ArrayList<>();
     public enum Role {USER, ADMIN};
     public User(){};
     public User(String realName, String username, String email, String password, String phoneNumber){
@@ -24,6 +24,10 @@ public class User {
         this.myCreatedAuctions = new ArrayList<>();
         this.myJoinedAuctions = new ArrayList<>();
     }
+    //Bổ sung Getter
+    public String getPassword(){ return this.password; }
+    public String getEmail(){ return this.email; }
+
     public String getRealName(){
         return this.realName;
     }
@@ -86,4 +90,7 @@ public class User {
     public void setRole(Role role) {
         this.role = role;
     }
+    // Bổ sung Setter phục vụ Register
+    public void setEmail(String email) { this.email = email; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 }

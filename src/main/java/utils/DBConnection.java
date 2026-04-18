@@ -17,11 +17,11 @@ public class DBConnection {
             System.out.println("✅ Kết nối Database thành công!");
         } 
         catch (ClassNotFoundException e) {
-            System.out.println("❌ Lỗi: Không tìm thấy JDBC Driver!");
+            System.out.println("Lỗi: Không tìm thấy JDBC Driver!");
             e.printStackTrace();
         } 
         catch (SQLException e) {
-            System.out.println("❌ Lỗi: Sai thông tin kết nối MySQL!");
+            System.out.println("Lỗi: Sai thông tin kết nối MySQL!");
             e.printStackTrace();
         }
         return conn;
