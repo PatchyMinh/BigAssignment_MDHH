@@ -65,7 +65,7 @@ public class ItemDAOImpl implements ItemDAO {
 
     @Override
     public Items getItemById(int id) {
-        String sql = "SELECT * FROM items WHERE id = ?";
+        String sql = "SELECT * FROM items WHERE item_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
