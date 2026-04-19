@@ -3,7 +3,7 @@ public class Electronics extends Items{
     private int warranty;
     private String brand;
 
-    public Electronics(String owner, double startingPrice, String description, int warranty, String brand) {
+    public Electronics(User owner, double startingPrice, String description, int warranty, String brand) {
         super(owner, startingPrice, description);
         this.warranty = warranty;
         this.brand = brand;

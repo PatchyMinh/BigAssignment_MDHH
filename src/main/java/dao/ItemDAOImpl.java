@@ -5,16 +5,17 @@ import utils.DBConnection;
 import java.sql.*;
 
 public class ItemDAOImpl implements ItemDAO {
+    private DBConnection dbConnection = new DBConnection();
     @Override
     public void addItem(Items item) {
         String sql = "INSERT INTO items (item_type, owner, starting_price, description, " +
                 "artist_name, release_date, warranty, brand, mileage, vehicle_id_plate) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            ps.setString(2, item.getOwner());
+            ps.setString(2, Integer.toString(item.getOwner().getID()));
             ps.setDouble(3, item.getStartingPrice());
             ps.setString(4, item.getDescription());
 
@@ -64,34 +65,52 @@ public class ItemDAOImpl implements ItemDAO {
 
     @Override
     public Items getItemById(int id) {
-        String sql = "SELECT * FROM items WHERE item_id = ?";
-        try (Connection conn = DBConnection.getConnection();
+        // Dùng JOIN để lấy luôn toàn bộ thông tin của User làm chủ món đồ
+        String sql = "SELECT i.*, u.id AS user_id, u.username, u.password, u.real_name, u.email, u.phone_number, u.role, u.balance " +
+                     "FROM items i " +
+                     "JOIN users u ON i.owner = u.username " + // Khớp cột owner của items với username của users
+                     "WHERE i.item_id = ?";
+                     
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    // 1. TẠO ĐỐI TƯỢNG USER HOÀN CHỈNH TỪ KẾT QUẢ SQL
+                    User fullOwner = new User();
+                    fullOwner.setID(rs.getInt("user_id"));
+                    fullOwner.setUsername(rs.getString("username"));
+                    fullOwner.setPassword(rs.getString("password"));
+                    fullOwner.setRealName(rs.getString("real_name"));
+                    fullOwner.setEmail(rs.getString("email"));
+                    fullOwner.setPhoneNumber(rs.getString("phone_number"));
+                    // Giả sử Role là Enum, cần convert từ String
+                    fullOwner.setRole(User.Role.valueOf(rs.getString("role"))); 
+                    fullOwner.setBalance(rs.getDouble("balance"));
+
+                    // 2. KHỞI TẠO ITEM VÀ TRUYỀN USER HOÀN CHỈNH VÀO CONSTRUCTOR
                     Items item = null;
                     String type = rs.getString("item_type");
-                    String owner = rs.getString("owner");
                     double startingPrice = rs.getDouble("starting_price");
                     String desc = rs.getString("description");
 
                     if ("Arts".equals(type)) {
                         String artist = rs.getString("artist_name");
                         Date releaseDate = rs.getDate("release_date");
-                        item = new Arts(owner, startingPrice, desc, artist, releaseDate != null ? releaseDate.toLocalDate() : null);
+                        // Truyền fullOwner (đối tượng User) vào đây thay vì String
+                        item = new Arts(fullOwner, startingPrice, desc, artist, releaseDate != null ? releaseDate.toLocalDate() : null);
 
                     } else if ("Electronics".equals(type)) {
-                        int warranty = rs.getInt("warranty"); // Dùng getInt
+                        int warranty = rs.getInt("warranty");
                         String brand = rs.getString("brand");
-                        item = new Electronics(owner, startingPrice, desc, warranty, brand);
+                        item = new Electronics(fullOwner, startingPrice, desc, warranty, brand);
 
                     } else if ("Vehicles".equals(type)) {
                         String brand = rs.getString("brand");
-                        int mileage = rs.getInt("mileage");   // Dùng getInt
+                        int mileage = rs.getInt("mileage");
                         String vehicleId = rs.getString("vehicle_id_plate");
-                        item = new Vehicles(owner, startingPrice, desc, brand, mileage, vehicleId);
+                        item = new Vehicles(fullOwner, startingPrice, desc, brand, mileage, vehicleId);
                     }
 
                     if (item != null) {
@@ -104,5 +123,22 @@ public class ItemDAOImpl implements ItemDAO {
             e.printStackTrace();
         }
         return null;
+    }
+    /**
+     * Cập nhật chủ sở hữu của món đồ sau khi đấu giá thành công.
+     */
+    @Override
+    public boolean updateItemOwner(Connection conn, int itemId, int newOwnerId) throws SQLException {
+        // Thủ thuật: Dùng truy vấn lồng (SELECT) để lấy username của người thắng (dựa vào ID)
+        // và gán thẳng vào cột 'owner' của món hàng.
+        String sql = "UPDATE items SET owner = (SELECT username FROM users WHERE id = ?) WHERE item_id = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, newOwnerId); // ID của người thắng (Buyer)
+            pstmt.setInt(2, itemId);     // ID của món hàng
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        }
     }
 }

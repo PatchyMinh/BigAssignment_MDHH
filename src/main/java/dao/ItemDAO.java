@@ -1,5 +1,8 @@
 package dao;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
 import model.Items;
 
 public interface ItemDAO {
@@ -7,5 +10,5 @@ public interface ItemDAO {
 
     Items getItemById(int id);
 
-
+    boolean updateItemOwner(Connection conn, int itemId, int newOwnerId) throws SQLException;
 }

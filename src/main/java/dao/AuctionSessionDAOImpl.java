@@ -1,8 +1,6 @@
 package dao;
 
-import model.AuctionSession;
-import model.Bid;
-import model.User;
+import model.*;
 import utils.DBConnection;
 
 import java.sql.*;
@@ -12,13 +10,15 @@ import java.util.List;
 public class AuctionSessionDAOImpl implements AuctionSessionDAO {
 
     private UserDAO userDAO = new UserDAOImpl();
+    private DBConnection dbConnection = new DBConnection();
+    private ItemDAO itemDAO = new ItemDAOImpl();
 
     @Override
     public boolean createSession(AuctionSession session, int itemId) {
         // Câu lệnh SQL chuẩn theo Database: dùng owner_id, step_price, duration_days
         String sql = "INSERT INTO auction_sessions (session_id, owner_id, item_id, starting_price, step_price, duration_days, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, session.getSessionID());
@@ -46,7 +46,7 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
     public AuctionSession getSessionById(String sessionId) {
         String sql = "SELECT * FROM auction_sessions WHERE session_id = ?";
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, sessionId);
@@ -56,13 +56,13 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
                     // 1. Lấy thông tin người bán
                     int ownerId = rs.getInt("owner_id");
                     User seller = userDAO.getUserById(ownerId);
-
+                    Items item = itemDAO.getItemById(rs.getInt("item_id")); // Lấy thông tin món hàng từ ItemDAO
                     double startingPrice = rs.getDouble("starting_price");
                     double stepPrice = rs.getDouble("step_price");
                     int durationDays = rs.getInt("duration_days");
 
                     // 2. Khởi tạo đối tượng Session
-                    AuctionSession session = new AuctionSession(seller, sessionId, startingPrice, stepPrice, durationDays);
+                    AuctionSession session = new AuctionSession(seller, item, startingPrice, stepPrice, durationDays);
                     session.status = AuctionSession.Status.valueOf(rs.getString("status"));
 
                     // 3. Phục hồi thời gian startTime và endTime từ created_at trong DB
@@ -96,18 +96,14 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
     }
 
     @Override
-    public boolean updateSessionStatus(String sessionId, AuctionSession.Status status) {
+    public boolean updateSessionStatusAtomic(Connection conn, String sessionId, AuctionSession.Status status) throws SQLException {
         String sql = "UPDATE auction_sessions SET status = ? WHERE session_id = ?";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, status.name());
             pstmt.setString(2, sessionId);
-
+            
             return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
-        return false;
     }
 }

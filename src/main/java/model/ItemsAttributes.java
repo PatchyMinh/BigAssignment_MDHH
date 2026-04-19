@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 public class ItemsAttributes {
     // Thuoc tinh chung
-    private String owner;
+    private User owner;
     private double startingPrice;
     private String description;
 
@@ -22,7 +22,7 @@ public class ItemsAttributes {
     private int mileage;
     private String vehicleID;
 
-    public String getOwner(){ return this.owner; }
+    public User getOwner(){ return this.owner; }
     public double getStartingPrice(){ return this.startingPrice; }
     public String getDescription(){ return this.description; }
     public String getArtistName(){ return this.artistName; }
@@ -32,7 +32,7 @@ public class ItemsAttributes {
     public int getMileage(){ return this.mileage; }
     public String getVehicleID(){ return this.vehicleID; }
 
-    public void setOwner(String owner) {
+    public void setOwner(User owner) {
         this.owner = owner;
     }
 

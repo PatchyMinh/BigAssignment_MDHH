@@ -29,7 +29,7 @@ public class MainTest {
 
         // 3.1 Tạo bức tranh (Arts)
         ItemsAttributes artAttr = new ItemsAttributes();
-        artAttr.setOwner(seller.getUsername());
+        artAttr.setOwner(seller);
         artAttr.setStartingPrice(5000.0);
         artAttr.setDescription("Bức tranh Đêm Đầy Sao (Bản sao siêu cấp)");
         artAttr.setArtistName("Vincent van Gogh");
@@ -40,7 +40,7 @@ public class MainTest {
 
         // 3.2 Tạo đồ điện tử (Electronics)
         ItemsAttributes elecAttr = new ItemsAttributes();
-        elecAttr.setOwner(seller.getUsername());
+        elecAttr.setOwner(seller);
         elecAttr.setStartingPrice(12000.0);
         elecAttr.setDescription("Điện thoại iPhone 15 Pro Max");
         elecAttr.setBrand("Apple");
@@ -51,7 +51,7 @@ public class MainTest {
 
         // 3.3 Tạo xe cộ (Vehicles)
         ItemsAttributes vehicleAttr = new ItemsAttributes();
-        vehicleAttr.setOwner(seller.getUsername());
+        vehicleAttr.setOwner(seller);
         vehicleAttr.setStartingPrice(500000.0);
         vehicleAttr.setDescription("Xe máy SH 150i");
         vehicleAttr.setBrand("Honda");
@@ -67,11 +67,10 @@ public class MainTest {
         String sessionId = "SS_ART_" + System.currentTimeMillis();
         AuctionSession session = new AuctionSession(
                 seller,
-                sessionId,
-                artItem.getStartingPrice(), // Giá khởi điểm 5000
-                500.0,                      // Bước giá
-                3                           // Thời gian 3 ngày
+                artItem,
+                artItem.getStartingPrice() // Giá khởi điểm 5000
         );
+
         boolean isSessionCreated = sessionDAO.createSession(session, artItem.getItemID());
         if (isSessionCreated) {
             System.out.println("✅ Tạo Phiên đấu giá thành công! ID Phiên: " + sessionId);

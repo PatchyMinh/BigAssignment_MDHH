@@ -2,17 +2,18 @@ package dao;
 
 import model.User;
 import utils.DBConnection;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAOImpl implements UserDAO {
+
+    private DBConnection dbConnection = new DBConnection();
     // === PHẦN THÊM MỚI: HÀM ĐĂNG KÝ ===
     @Override
     public boolean register(User user) {
         String sql = "INSERT INTO users (username, password, real_name, email, phone_number, role, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setString(1, user.getUsername());
@@ -45,7 +46,7 @@ public class UserDAOImpl implements UserDAO {
         User user = null;
 
         // Dùng try-with-resources để Java tự động đóng kết nối sau khi dùng xong
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, username);
@@ -83,7 +84,7 @@ public class UserDAOImpl implements UserDAO {
         // Câu lệnh SQL lấy tất cả các cột của mọi dòng trong bảng users
         String sql = "SELECT * FROM users";
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             
@@ -111,7 +112,7 @@ public class UserDAOImpl implements UserDAO {
         String sql = "UPDATE users SET balance = ?, frozen_balance = ? WHERE id = ?";
         boolean isUpdated = false;
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             // Gán giá trị cho 3 dấu hỏi chấm (?)
@@ -139,7 +140,7 @@ public class UserDAOImpl implements UserDAO {
         // Dùng toán tử LIKE để tìm kiếm chứa từ khóa
         String sql = "SELECT * FROM users WHERE username LIKE ?";
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             // Thêm ký tự % vào 2 đầu để tìm kiếm linh hoạt (Ví dụ: gõ "ali" sẽ ra "alice_seller")
             pstmt.setString(1, "%" + keyword + "%");
@@ -166,7 +167,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public User getUserById(int id) {
         String sql = "SELECT * FROM users WHERE id = ?";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, id);
@@ -196,4 +197,108 @@ public class UserDAOImpl implements UserDAO {
         }
         return null;
     }
+    @Override
+    public boolean updateStatus(int userId, String status) {
+        String sql = "UPDATE users SET status = ? WHERE id = ?";
+        try (
+            Connection conn = dbConnection.getConnection(); 
+            PreparedStatement pstmt = conn.prepareStatement(sql)) 
+            {
+                pstmt.setString(1, status); // 'LOCKED' hoặc 'ACTIVE'
+                pstmt.setInt(2, userId);
+                    return pstmt.executeUpdate() > 0;
+    } 
+        catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+    }
 }
+    @Override
+    public int countUsersByStatus(int status) {
+        String sql = "SELECT COUNT(*) FROM users WHERE status = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) 
+            {
+            pstmt.setInt(1, status);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) 
+                    return rs.getInt(1);
+                }
+    } 
+    catch (SQLException e) { e.printStackTrace(); }
+    return 0;
+}
+    /**
+     * Đóng băng tiền: Trừ balance, cộng vào frozenBalance.
+     * Chỉ thành công khi số dư (balance) >= số tiền cần đóng băng.
+     */
+    @Override
+    public boolean freezeMoneyAtomic(Connection conn, int userId, double amount) throws SQLException {
+        // Câu SQL vàng: Kiểm tra số dư ngay trong lúc UPDATE
+        String sql = "UPDATE users SET balance = balance - ?, frozenBalance = frozenBalance + ? WHERE id = ? AND balance >= ?";
+        
+        // Dùng PreparedStatement bình thường, NHƯNG KHÔNG ĐÓNG Connection ở đây
+        // vì Connection này do Service quản lý.
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDouble(1, amount);
+            pstmt.setDouble(2, amount);
+            pstmt.setInt(3, userId);
+            pstmt.setDouble(4, amount);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0; // Trả về true nếu update thành công (đủ tiền)
+        }
+    }
+
+    /**
+     * Hoàn tiền: Trừ frozenBalance, trả lại vào balance.
+     */
+    @Override
+    public boolean refundMoneyAtomic(Connection conn, int userId, double amount) throws SQLException {
+        String sql = "UPDATE users SET balance = balance + ?, frozenBalance = frozenBalance - ? WHERE id = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDouble(1, amount);
+            pstmt.setDouble(2, amount);
+            pstmt.setInt(3, userId);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        }
+    }
+    /**
+     * Trừ hẳn tiền đóng băng của người thắng cuộc.
+     * Cực kỳ an toàn: Có check điều kiện frozenBalance >= amount để chống âm tiền ảo.
+     */
+    @Override
+    public boolean deductFrozenMoneyAtomic(Connection conn, int userId, double amount) throws SQLException {
+        // Chỉ trừ ở cột frozenBalance, vì tiền này đã được bế từ balance sang lúc đặt giá rồi
+        String sql = "UPDATE users SET frozenBalance = frozenBalance - ? WHERE id = ? AND frozenBalance >= ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDouble(1, amount);
+            pstmt.setInt(2, userId);
+            pstmt.setDouble(3, amount); // Đảm bảo số tiền đóng băng hiện tại đủ để trừ
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        }
+    }
+
+    /**
+     * Cộng tiền vào tài khoản thực (dùng cho người bán khi chốt đơn, hoặc chức năng nạp tiền).
+     */
+    @Override
+    public boolean addMoneyAtomic(Connection conn, int userId, double amount) throws SQLException {
+        String sql = "UPDATE users SET balance = balance + ? WHERE id = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDouble(1, amount);
+            pstmt.setInt(2, userId);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        }
+    }
+}
+

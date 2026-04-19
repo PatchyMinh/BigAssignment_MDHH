@@ -4,7 +4,7 @@ public class Vehicles extends Items{
     private int mileage;
     private String vehicleID;
 
-    public Vehicles(String owner, double startingPrice, String description, String brand, int mileage, String vehicleID) {
+    public Vehicles(User owner, double startingPrice, String description, String brand, int mileage, String vehicleID) {
         super(owner, startingPrice, description);
         this.brand = brand;
         this.mileage = mileage;

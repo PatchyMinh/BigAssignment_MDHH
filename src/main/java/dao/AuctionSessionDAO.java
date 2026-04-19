@@ -1,7 +1,9 @@
 package dao;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
 import model.AuctionSession;
-import java.util.List;
 
 public interface AuctionSessionDAO {
     // 1. Tạo phiên đấu giá mới lưu vào Database
@@ -11,5 +13,5 @@ public interface AuctionSessionDAO {
     AuctionSession getSessionById(String sessionId);
 
     // 3. Cập nhật trạng thái phiên
-    boolean updateSessionStatus(String sessionId, AuctionSession.Status status);
+    boolean updateSessionStatusAtomic(Connection conn, String sessionId, AuctionSession.Status status) throws SQLException;
 }

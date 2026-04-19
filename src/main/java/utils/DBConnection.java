@@ -9,7 +9,7 @@ public class DBConnection {
     private static final String USER = "root";
     private static final String PASSWORD = "";
 
-    public static Connection getConnection() {
+    public Connection getConnection() {
         Connection conn = null;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -26,8 +26,4 @@ public class DBConnection {
         }
         return conn;
         }
-
-    public static void main(String[] args) {
-        DBConnection.getConnection();
-    }
 }

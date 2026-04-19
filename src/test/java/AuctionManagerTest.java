@@ -1,17 +1,21 @@
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.LocalDate;
 import java.util.List;
 import model.*;
 public class AuctionManagerTest {
 
     private AuctionManager manager;
     private User dummySeller;
+    private Items dummyItem = new Arts(dummySeller, 50000, "A beautiful painting", "Dummy Artist", LocalDate.now());
 
     @BeforeEach
     public void setUp() {
         manager = AuctionManager.getInstance();
         dummySeller = new User("Dummy Seller", "dummy", "dummy@mail.com", "pass", "123");
+
     }
 
     @Test
@@ -22,13 +26,13 @@ public class AuctionManagerTest {
 
     @Test
     public void testAddAndFindSession() {
-        AuctionSession session = new AuctionSession(dummySeller, "SS_MGR_001", 50000, 10000, 2);
+        AuctionSession session = new AuctionSession(dummySeller, dummyItem, 50000, 10000, 2);
         manager.addSession(session);
 
-        AuctionSession foundSession = manager.findSessionByID("SS_MGR_001");
+        AuctionSession foundSession = manager.findSessionByID(session.getSessionID());
         
         assertNotNull(foundSession, "Should find the session that was just added");
-        assertEquals("SS_MGR_001", foundSession.getSessionID(), "The IDs should match exactly");
+        assertEquals(session.getSessionID(), foundSession.getSessionID(), "The IDs should match exactly");
     }
 
     @Test
@@ -40,10 +44,10 @@ public class AuctionManagerTest {
     @Test
     public void testGetSessionsByStatus() {
         // 1. Create a PENDING session
-        AuctionSession pendingSession = new AuctionSession(dummySeller, "SS_PENDING_01", 10000, 1000, 1);
+        AuctionSession pendingSession = new AuctionSession(dummySeller, dummyItem, 10000, 1000, 1);
         
         // 2. Create an OPEN session
-        AuctionSession openSession = new AuctionSession(dummySeller, "SS_OPEN_01", 20000, 2000, 1);
+        AuctionSession openSession = new AuctionSession(dummySeller, dummyItem, 20000, 2000, 1);
         openSession.startSession(1); // Changes status to OPEN
 
         manager.addSession(pendingSession);
