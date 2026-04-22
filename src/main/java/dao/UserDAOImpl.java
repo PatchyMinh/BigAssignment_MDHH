@@ -9,7 +9,6 @@ import java.util.List;
 public class UserDAOImpl implements UserDAO {
 
     private DBConnection dbConnection = new DBConnection();
-    // === PHẦN THÊM MỚI: HÀM ĐĂNG KÝ ===
     @Override
     public boolean register(User user) {
         String sql = "INSERT INTO users (username, password, real_name, email, phone_number, role, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -60,7 +59,6 @@ public class UserDAOImpl implements UserDAO {
                     user.setUsername(rs.getString("username"));
                     user.setPassword(rs.getString("password"));
 
-                    // BỔ SUNG CÁC TRƯỜNG MỚI
                     user.setRealName(rs.getString("real_name"));
                     user.setEmail(rs.getString("email"));
                     user.setPhoneNumber(rs.getString("phone_number"));
@@ -68,7 +66,6 @@ public class UserDAOImpl implements UserDAO {
                     user.setBalance(rs.getDouble("balance"));
                     user.setFrozenBalance(rs.getDouble("frozen_balance"));
                     
-                    // Xử lý Enum Role như đã bàn
                     user.setRole(User.Role.valueOf(rs.getString("role").toUpperCase()));
                 }
             }

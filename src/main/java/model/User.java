@@ -1,12 +1,12 @@
 package model;
 import java.util.*;
 public class User {
-    protected String realName;
-    protected String username;
-    protected int id;
-    protected String email;
-    protected Role role;
-    protected Status status;
+    private String realName;
+    private String username;
+    private int id;
+    private String email;
+    private Role role;
+    private Status status;
     private String password;
     private String phoneNumber;
     private double balance = 0;
@@ -26,7 +26,6 @@ public class User {
         this.myCreatedAuctions = new ArrayList<>();
         this.myJoinedAuctions = new ArrayList<>();
     }
-    //Bổ sung Getter
     public String getPassword(){ return this.password; }
     public String getEmail(){ return this.email; }
 

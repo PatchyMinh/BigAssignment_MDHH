@@ -16,7 +16,6 @@ public abstract class Items {
         this.description = description;
     }
 
-    // Thêm Getter và Setter cho itemID
     public int getItemID() { return itemID; }
     public void setItemID(int itemID) { this.itemID = itemID; }
 
