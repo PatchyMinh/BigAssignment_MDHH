@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 public class MainTest {
     public static void main(String[] args) {
-        System.out.println("====== BẮT ĐẦU TEST HỆ THỐNG ĐẤU GIÁ ======\n");
+       /*  System.out.println("====== BẮT ĐẦU TEST HỆ THỐNG ĐẤU GIÁ ======\n");
 
         // 1. Khởi tạo các DAO
         UserDAO userDAO = new UserDAOImpl();
@@ -29,7 +29,7 @@ public class MainTest {
 
         // 3.1 Tạo bức tranh (Arts)
         ItemsAttributes artAttr = new ItemsAttributes();
-        artAttr.setOwner(seller);
+        artAttr.setOwner(seller.getUsername());
         artAttr.setStartingPrice(5000.0);
         artAttr.setDescription("Bức tranh Đêm Đầy Sao (Bản sao siêu cấp)");
         artAttr.setArtistName("Vincent van Gogh");
@@ -40,7 +40,7 @@ public class MainTest {
 
         // 3.2 Tạo đồ điện tử (Electronics)
         ItemsAttributes elecAttr = new ItemsAttributes();
-        elecAttr.setOwner(seller);
+        elecAttr.setOwner(seller.getUsername());
         elecAttr.setStartingPrice(12000.0);
         elecAttr.setDescription("Điện thoại iPhone 15 Pro Max");
         elecAttr.setBrand("Apple");
@@ -51,7 +51,7 @@ public class MainTest {
 
         // 3.3 Tạo xe cộ (Vehicles)
         ItemsAttributes vehicleAttr = new ItemsAttributes();
-        vehicleAttr.setOwner(seller);
+        vehicleAttr.setOwner(seller.getUsername());
         vehicleAttr.setStartingPrice(500000.0);
         vehicleAttr.setDescription("Xe máy SH 150i");
         vehicleAttr.setBrand("Honda");
@@ -67,10 +67,11 @@ public class MainTest {
         String sessionId = "SS_ART_" + System.currentTimeMillis();
         AuctionSession session = new AuctionSession(
                 seller,
-                artItem,
-                artItem.getStartingPrice() // Giá khởi điểm 5000
+                sessionId,
+                artItem.getStartingPrice(), // Giá khởi điểm 5000
+                500.0,                      // Bước giá
+                3                           // Thời gian 3 ngày
         );
-
         boolean isSessionCreated = sessionDAO.createSession(session, artItem.getItemID());
         if (isSessionCreated) {
             System.out.println("✅ Tạo Phiên đấu giá thành công! ID Phiên: " + sessionId);
@@ -96,6 +97,23 @@ public class MainTest {
             }
         }
 
-        System.out.println("\n====== KẾT THÚC TEST ======");
+        System.out.println("\n====== KẾT THÚC TEST ======");*/
+
+        UserDAO userDAO = new UserDAOImpl();
+        ItemDAO itemDAO = new ItemDAOImpl();
+
+        // 1. Test đăng nhập
+        User u = userDAO.login("buyer_an", "123456");
+        if(u != null) {
+            System.out.println("Đăng nhập thành công! Chào " + u.getRealName());
+            System.out.println("Số dư hiện tại: " + u.getBalance());
+        }
+
+        // 2. Test lấy thông tin hàng hóa
+        Items item = itemDAO.getItemById(1); // Lấy item đầu tiên (Bức tranh)
+        if(item instanceof Arts) {
+            System.out.println("Sản phẩm nghệ thuật: " + item.getDescription());
+            System.out.println("Tác giả: " + ((Arts) item).getArtistName());
+        }
     }
 }

@@ -1,10 +1,10 @@
 package model;
 public class Electronics extends Items{
-    private int warranty;
-    private String brand;
+    private final int warranty;
+    private final String brand;
 
-    public Electronics(User owner, double startingPrice, String description, int warranty, String brand) {
-        super(owner, startingPrice, description);
+    public Electronics(int itemID, String ownerName, double startingPrice, String description, int warranty, String brand) {
+        super(itemID, ownerName, startingPrice, description);
         this.warranty = warranty;
         this.brand = brand;
     }
@@ -16,15 +16,8 @@ public class Electronics extends Items{
         return brand;
     }
 
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
-    public void setWarranty(int warranty) {
-        this.warranty = warranty;
-    }
-
     @Override
     public String showInfo() {
-        return "Current Item: \nType: Electronic\n Owner: " + getOwner() + "\nBrand: " + getBrand() + "\nWarranty Period: " + getWarranty()+ "\nDescription: " + getDescription() + "\nStarting Price: " + getStartingPrice();
+        return "Current Item: \nType: Electronic\n Owner: " + getOwnerName() + "\nBrand: " + getBrand() + "\nWarranty Period: " + getWarranty()+ "\nDescription: " + getDescription() + "\nStarting Price: " + getStartingPrice();
     }
 }

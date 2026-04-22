@@ -4,33 +4,28 @@ package model;
 public abstract class Items {
     //Tích hợp tự động sinh UUID hoặc lấy ID từ Database sau.
     protected int itemID;
-    protected User owner;
+    protected String ownerName;
     protected double startingPrice;
     protected String description;
-    
 
-    public Items(User owner, double startingPrice, String description) {
-        //this.itemID = UUID.randomUUID().toString();
-        this.owner = owner;
+
+    public Items(int itemID, String ownerName, double startingPrice, String description) {
+        this.itemID = itemID;
+        this.ownerName = ownerName;
         this.startingPrice = startingPrice;
         this.description = description;
     }
 
-    public int getItemID() { return itemID; }
     public void setItemID(int itemID) { this.itemID = itemID; }
-
-    public User getOwner() {
-        return owner;
+    public int getItemID() { return itemID; }
+    public String getOwnerName() {
+        return ownerName;
     }
     public double getStartingPrice() {
         return startingPrice;
     }
     public String getDescription(){
         return description;
-    }
-
-    public void setDescription(String description){
-        this.description = description;
     }
 
     public abstract String showInfo();

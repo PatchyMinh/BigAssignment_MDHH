@@ -23,6 +23,7 @@ public class ItemsAttributes {
     private String vehicleID;
 
     public User getOwner(){ return this.owner; }
+    public String getOwnerName() { return this.owner.getUsername(); }
     public double getStartingPrice(){ return this.startingPrice; }
     public String getDescription(){ return this.description; }
     public String getArtistName(){ return this.artistName; }
