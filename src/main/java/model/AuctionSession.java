@@ -21,7 +21,7 @@ public class AuctionSession {
     public AuctionSession(User seller, Items item, double startingPrice, double incrementStep, int openDays){
         this.seller = seller;
         this.item = item;
-        this.sessionID = IDGenerator.generateSessionId();
+        this.sessionID = IDGenerator.generateSessionId(); // sinh UUID duy nhất cho mỗi phiên đấu giá
         this.startingPrice = startingPrice;
         this.incrementStep = incrementStep;
         this.startTime = LocalDateTime.now();
