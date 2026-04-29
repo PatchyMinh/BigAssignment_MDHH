@@ -1,7 +1,7 @@
 package model;
 
-import java.time.*;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 import utils.IDGenerator;
 
@@ -13,7 +13,7 @@ public class AuctionSession {
     final private double incrementStep;
     private double currentPrice;
     private User highestBidder = null;
-    private ArrayList<Bid> bidHistory = new ArrayList<Bid>();
+    final private ArrayList<Bid> bidHistory = new ArrayList<>();
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     public enum Status { PENDING, OPEN, CLOSED, CANCELLED }; // một nhóm các hằng số

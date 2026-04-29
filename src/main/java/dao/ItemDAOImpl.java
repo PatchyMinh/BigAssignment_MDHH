@@ -1,19 +1,33 @@
 package dao;
 
-import model.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDate;
+
+import model.Arts;
+import model.Electronics;
+import model.Items;
+import model.Vehicles;
 import utils.DBConnection;
-import java.sql.*;
 
 public class ItemDAOImpl implements ItemDAO {
     DBConnection dbConnection = new DBConnection();
+
+    // =========================================================================
+    // 1. THÊM SẢN PHẨM (NẠP CHỒNG)
+    // =========================================================================
+
     @Override
-    public void addItem(Items item) {
+    public void addItem(Connection conn, Items item) throws SQLException {
         String sql = "INSERT INTO items (item_type, owner, starting_price, description, " +
                 "artist_name, release_date, warranty, brand, mileage, vehicle_id_plate) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(2, item.getOwnerName());
             ps.setDouble(3, item.getStartingPrice());
@@ -23,7 +37,15 @@ public class ItemDAOImpl implements ItemDAO {
                 Arts art = (Arts) item;
                 ps.setString(1, "Arts");
                 ps.setString(5, art.getArtistName());
-                ps.setDate(6, java.sql.Date.valueOf(art.getReleaseDate()));
+                
+                // Tránh lỗi NullPointerException nếu bức tranh không có ngày phát hành
+                LocalDate rd = art.getReleaseDate();
+                if (rd != null) {
+                    ps.setDate(6, java.sql.Date.valueOf(rd));
+                } else {
+                    ps.setNull(6, java.sql.Types.DATE);
+                }
+                
                 ps.setNull(7, java.sql.Types.INTEGER);
                 ps.setNull(8, java.sql.Types.VARCHAR);
                 ps.setNull(9, java.sql.Types.INTEGER);
@@ -54,51 +76,55 @@ public class ItemDAOImpl implements ItemDAO {
             if (affectedRows > 0) {
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     if (rs.next()) {
-                        item.setItemID(rs.getInt(1));
+                        item.setItemID(rs.getInt(1)); // Gán ngược ID do DB tự sinh vào Object
                     }
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
     @Override
-    public Items getItemById(int id) {
-        String sql = "SELECT * FROM items WHERE item_id = ?";
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    String type = rs.getString("item_type");
-                    String owner = rs.getString("owner");
-                    double startingPrice = rs.getDouble("starting_price");
-                    String desc = rs.getString("description");
-
-                    // Trực tiếp return đối tượng hoàn chỉnh qua Constructor
-                    if ("Arts".equals(type)) {
-                        return new Arts(id, owner, startingPrice, desc,
-                                rs.getString("artist_name"),
-                                rs.getDate("release_date").toLocalDate());
-                    } else if ("Electronics".equals(type)) {
-                        return new Electronics(id, owner, startingPrice, desc,
-                                rs.getInt("warranty"),
-                                rs.getString("brand"));
-                    } else if ("Vehicles".equals(type)) {
-                        return new Vehicles(id, owner, startingPrice, desc,
-                                rs.getString("brand"),
-                                rs.getInt("mileage"),
-                                rs.getString("vehicle_id_plate"));
-                    }
-                }
-            }
+    public void addItem(Items item) {
+        try (Connection conn = dbConnection.getConnection()) {
+            addItem(conn, item);
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    // =========================================================================
+    // 2. LẤY SẢN PHẨM THEO ID (NẠP CHỒNG)
+    // =========================================================================
+
+    @Override
+    public Items getItemById(Connection conn, int id) throws SQLException {
+        String sql = "SELECT * FROM items WHERE item_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractItemFromResultSet(rs);
+                }
+            }
+        }
         return null;
     }
+
+    @Override
+    public Items getItemById(int id) {
+        try (Connection conn = dbConnection.getConnection()) {
+            return getItemById(conn, id);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // =========================================================================
+    // 3. CẬP NHẬT CHỦ SỞ HỮU MỚI CHO SẢN PHẨM (NẠP CHỒNG)
+    // Dùng khi chốt đơn thành công ở SettlementService
+    // =========================================================================
+
     @Override
     public boolean updateItemOwner(Connection conn, int itemId, int newOwnerId) throws SQLException {
         // Thủ thuật: Dùng truy vấn lồng (SELECT) để lấy username của người thắng (dựa vào ID)
@@ -109,8 +135,51 @@ public class ItemDAOImpl implements ItemDAO {
             pstmt.setInt(1, newOwnerId); // ID của người thắng (Buyer)
             pstmt.setInt(2, itemId);     // ID của món hàng
             
-            int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
+            return pstmt.executeUpdate() > 0;
         }
+    }
+
+    @Override
+    public boolean updateItemOwner(int itemId, int newOwnerId) {
+        try (Connection conn = dbConnection.getConnection()) {
+            return updateItemOwner(conn, itemId, newOwnerId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // =========================================================================
+    // HÀM TIỆN ÍCH (Utility) DÙNG NỘI BỘ TRONG DAO
+    // =========================================================================
+
+    // Hàm này giúp gom code tạo đối tượng Items lại 1 chỗ, tái sử dụng nếu sau này 
+    // bạn viết thêm hàm getAllItems() hoặc searchItems()
+    private Items extractItemFromResultSet(ResultSet rs) throws SQLException {
+        int id = rs.getInt("item_id");
+        String type = rs.getString("item_type");
+        String owner = rs.getString("owner");
+        double startingPrice = rs.getDouble("starting_price");
+        String desc = rs.getString("description");
+
+        if ("Arts".equals(type)) {
+            Date sqlDate = rs.getDate("release_date");
+            return new Arts(id, owner, startingPrice, desc,
+                    rs.getString("artist_name"),
+                    sqlDate != null ? sqlDate.toLocalDate() : null);
+
+        } else if ("Electronics".equals(type)) {
+            return new Electronics(id, owner, startingPrice, desc,
+                    rs.getInt("warranty"),
+                    rs.getString("brand"));
+
+        } else if ("Vehicles".equals(type)) {
+            return new Vehicles(id, owner, startingPrice, desc,
+                    rs.getString("brand"),
+                    rs.getInt("mileage"),
+                    rs.getString("vehicle_id_plate"));
+        }
+        
+        return null;
     }
 }

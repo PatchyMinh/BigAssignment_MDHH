@@ -6,12 +6,21 @@ import java.sql.SQLException;
 import model.AuctionSession;
 
 public interface AuctionSessionDAO {
-    // 1. Tạo phiên đấu giá mới lưu vào Database
-    boolean createSession(AuctionSession session, int itemId);
+    // =========================================================================
+    // 1. TẠO PHIÊN ĐẤU GIÁ MỚI
+    // =========================================================================
+    boolean createSession(Connection conn, AuctionSession session, int itemId) throws SQLException;
+    boolean createSession(AuctionSession session, int itemId); // Bản gọi lẹ
 
-    // 2. Lấy thông tin một phiên đấu giá dựa vào ID
-    AuctionSession getSessionById(String sessionId);
+    // =========================================================================
+    // 2. LẤY THÔNG TIN PHIÊN ĐẤU GIÁ (Kèm người bán và sản phẩm)
+    // =========================================================================
+    AuctionSession getSessionById(Connection conn, String sessionId) throws SQLException;
+    AuctionSession getSessionById(String sessionId); // Bản gọi lẹ dùng cho UI
 
-    // 3. Cập nhật trạng thái phiên
+    // =========================================================================
+    // 3. CẬP NHẬT TRẠNG THÁI PHIÊN (Ví dụ: Chuyển từ OPEN sang CLOSED)
+    // =========================================================================
     boolean updateSessionStatusAtomic(Connection conn, String sessionId, AuctionSession.Status status) throws SQLException;
+    boolean updateSessionStatusAtomic(String sessionId, AuctionSession.Status status); // Bản gọi lẹ
 }

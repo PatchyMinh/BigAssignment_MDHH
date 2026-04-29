@@ -1,22 +1,33 @@
-import static org.junit.jupiter.api.Assertions.*;
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
-import java.util.List;
-import model.*;
+import model.Arts;
+import model.AuctionManager;
+import model.AuctionSession;
+import model.Items;
+import model.User;
 public class AuctionManagerTest {
 
     private AuctionManager manager;
     private User dummySeller;
-    private Items dummyItem = new Arts(dummySeller, 50000, "A beautiful painting", "Dummy Artist", LocalDate.now());
+    private Items dummyItem;
 
     @BeforeEach
     public void setUp() {
         manager = AuctionManager.getInstance();
         dummySeller = new User("Dummy Seller", "dummy", "dummy@mail.com", "pass", "123");
-
+        dummyItem = new Arts(1, dummySeller.getUsername(), 50000, "A beautiful painting", "Dummy Artist", LocalDate.now());
     }
+
 
     @Test
     public void testSingletonInstance() {

@@ -1,10 +1,19 @@
 package service;
 
-import dao.*;
-import model.*;
-import utils.DBConnection;
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import dao.AuctionSessionDAO;
+import dao.AuctionSessionDAOImpl;
+import dao.BidDAO;
+import dao.BidDAOImpl;
+import dao.ItemDAO;
+import dao.ItemDAOImpl;
+import dao.UserDAO;
+import dao.UserDAOImpl;
+import model.AuctionSession;
+import model.Bid;
+import utils.DBConnection;
 
 public class SettlementService {
     private AuctionSessionDAO sessionDAO = new AuctionSessionDAOImpl();
@@ -23,9 +32,9 @@ public class SettlementService {
             conn.setAutoCommit(false); // Bắt đầu Transaction, không ghi cứng từ đầu, để có thể rollback nếu có lỗi
 
             // 1. Kiểm tra thông tin phiên
-            AuctionSession session = sessionDAO.getSessionById(sessionId);
+            AuctionSession session = sessionDAO.getSessionById(conn, sessionId);
             if (session == null || session.getStatus() != AuctionSession.Status.OPEN) {
-                System.out.println("❌ Lỗi: Phiên đấu giá không tồn tại hoặc đã bị đóng!");
+                System.out.println("Lỗi: Phiên đấu giá không tồn tại hoặc đã bị đóng!");
                 return false;
             }
 
@@ -43,12 +52,12 @@ public class SettlementService {
                 userDAO.addMoneyAtomic(conn, sellerId, finalPrice);
                 itemDAO.updateItemOwner(conn, session.getItem().getItemID(), buyerId);
 
-                System.out.println("✅ Đấu giá thành công! Hàng đã về tay người mua ID: " + buyerId);
+                System.out.println("Đấu giá thành công! Hàng đã về tay người mua ID: " + buyerId);
             } else {
                 // ==========================================
                 // KỊCH BẢN 2: PHIÊN Ế (KHÔNG CÓ AI ĐẶT GIÁ)
                 // ==========================================
-                System.out.println("ℹ️ Phiên đấu giá kết thúc. Không có ai đặt giá.");
+                System.out.println("Phiên đấu giá kết thúc. Không có ai đặt giá.");
             }
 
             sessionDAO.updateSessionStatusAtomic(conn, sessionId, AuctionSession.Status.CLOSED);
@@ -60,7 +69,7 @@ public class SettlementService {
             if (conn != null) {
                 try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
             }
-            System.out.println("⛔ Lỗi hệ thống: Đã hoàn tác toàn bộ quá trình chốt đơn.");
+            System.out.println("Lỗi hệ thống: Đã hoàn tác toàn bộ quá trình chốt đơn.");
             e.printStackTrace();
             return false;
         } finally {

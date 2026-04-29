@@ -1,26 +1,36 @@
 package dao;
 
-import model.*;
-import utils.DBConnection;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.List;
+
+import model.AuctionSession;
+import model.Bid;
+import model.Items;
+import model.User;
+import utils.DBConnection;
 
 public class AuctionSessionDAOImpl implements AuctionSessionDAO {
 
     private UserDAO userDAO = new UserDAOImpl();
     private DBConnection dbConnection = new DBConnection();
     private ItemDAO itemDAO = new ItemDAOImpl();
+    private BidDAO bidDAO = new BidDAOImpl(); // Khai báo thêm BidDAO ở đây để tái sử dụng
 
+    // =========================================================================
+    // 1. TẠO PHIÊN ĐẤU GIÁ
+    // =========================================================================
+    
+    // Bản dùng trong Transaction
     @Override
-    public boolean createSession(AuctionSession session, int itemId) {
-        // Câu lệnh SQL chuẩn theo Database: dùng owner_id, step_price, duration_days
+    public boolean createSession(Connection conn, AuctionSession session, int itemId) throws SQLException {
         String sql = "INSERT INTO auction_sessions (session_id, owner_id, item_id, starting_price, step_price, duration_days, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, session.getSessionID());
             pstmt.setInt(2, session.getSeller().getID());
             pstmt.setInt(3, itemId);
@@ -34,7 +44,13 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
             pstmt.setString(7, session.status.name()); // "PENDING", "OPEN"...
 
             return pstmt.executeUpdate() > 0;
+        }
+    }
 
+    @Override
+    public boolean createSession(AuctionSession session, int itemId) {
+        try (Connection conn = dbConnection.getConnection()) {
+            return createSession(conn, session, itemId);
         } catch (SQLException e) {
             System.out.println("❌ Lỗi khi tạo phiên đấu giá: " + e.getMessage());
             e.printStackTrace();
@@ -42,21 +58,24 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
         return false;
     }
 
+    // =========================================================================
+    // 2. LẤY THÔNG TIN MỘT PHIÊN ĐẤU GIÁ
+    // =========================================================================
     @Override
-    public AuctionSession getSessionById(String sessionId) {
-        String sql = "SELECT * FROM auction_sessions WHERE session_id = ?";
+    public AuctionSession getSessionById(Connection conn, String sessionId) throws SQLException {
+        String sql = "SELECT * FROM auction_sessions WHERE session_id = ? FOR UPDATE"; 
+        // Khóa dòng để đảm bảo tính nhất quán khi đọc dữ liệu trong transaction
 
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, sessionId);
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    // 1. Lấy thông tin người bán
                     int ownerId = rs.getInt("owner_id");
-                    User seller = userDAO.getUserById(ownerId);
-                    Items item = itemDAO.getItemById(rs.getInt("item_id")); // Lấy thông tin món hàng từ ItemDAO
+                    User seller = userDAO.getUserById(conn, ownerId);
+                    
+                    Items item = itemDAO.getItemById(conn, rs.getInt("item_id")); 
+                    
                     double startingPrice = rs.getDouble("starting_price");
                     double stepPrice = rs.getDouble("step_price");
                     int durationDays = rs.getInt("duration_days");
@@ -73,8 +92,7 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
                     }
 
                     // 4. Lấy Giá hiện tại và Người giá cao nhất TỪ BẢNG BIDS
-                    BidDAO bidDAO = new BidDAOImpl();
-                    List<Bid> bids = bidDAO.getBidsBySession(sessionId); // Hàm này đã ORDER BY amount DESC rồi
+                    List<Bid> bids = bidDAO.getBidsBySession(conn, sessionId); 
 
                     if (bids != null && !bids.isEmpty()) {
                         Bid highestBid = bids.get(0); // Lượt bid đầu tiên là cao nhất
@@ -95,6 +113,22 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
         return null;
     }
 
+    // Bản gọi lẹ (Bổ sung thêm)
+    @Override
+    public AuctionSession getSessionById(String sessionId) {
+        try (Connection conn = dbConnection.getConnection()) {
+            return getSessionById(conn, sessionId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // =========================================================================
+    // 3. CẬP NHẬT TRẠNG THÁI PHIÊN
+    // =========================================================================
+    
+    // Bản dùng trong Transaction (Code cũ của bạn)
     @Override
     public boolean updateSessionStatusAtomic(Connection conn, String sessionId, AuctionSession.Status status) throws SQLException {
         String sql = "UPDATE auction_sessions SET status = ? WHERE session_id = ?";
@@ -105,5 +139,16 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
             
             return pstmt.executeUpdate() > 0;
         }
+    }
+
+    // Bản gọi lẹ (Bổ sung thêm)
+    @Override
+    public boolean updateSessionStatusAtomic(String sessionId, AuctionSession.Status status) {
+        try (Connection conn = dbConnection.getConnection()) {
+            return updateSessionStatusAtomic(conn, sessionId, status);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

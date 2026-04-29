@@ -5,7 +5,7 @@ import java.sql.SQLException;
 
 public class DBConnection {
     // Thông số mặc định của XAMPP
-    private static final String URL = "jdbc:mysql://localhost:3306/auction_system_db";
+    private static final String URL = "jdbc:mysql://localhost:3306/quan_ly_dau_gia?allowMultiQueries=true";
     private static final String USER = "root";
     private static final String PASSWORD = "";
 

@@ -1,47 +1,73 @@
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.junit.jupiter.api.DisplayName;
-// import static org.junit.jupiter.api.Assertions.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.Statement;
 
-// import service.AuctionService;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
-// public class AuctionServiceIntegrationTest {
+import service.AuctionService;
+import utils.DBConnection;
 
-//     private AuctionService auctionService;
+public class AuctionServiceIntegrationTest {
 
-//     @BeforeEach
-//     public void setUp() {
-//         // Khởi tạo Service thật, nó sẽ tự động dùng DAO thật và kết nối DB thật của bạn
-//         auctionService = new AuctionService();
-//     }
+    private AuctionService auctionService;
+    DBConnection dbConnection = new DBConnection();
 
-//     @Test
-//     @DisplayName("Test đặt giá tích hợp với Database thật")
-//     public void testPlaceBidWithRealDatabase() {
-//         System.out.println("Bắt đầu test đặt giá...");
+    @BeforeEach
+    public void setUp() {
+        auctionService = new AuctionService();
 
-//         // 🚨 CHÚ Ý QUAN TRỌNG: 
-//         // Bạn PHẢI đổi 3 giá trị dưới đây cho khớp với dữ liệu ĐANG CÓ THẬT trong MySQL của bạn
-//         int realBidderId = 2;              // Đảm bảo User có ID = 2 tồn tại và đủ tiền
-//         String realSessionId = "SS_001";   // Đảm bảo Phiên này đang ở trạng thái OPEN
-//         double bidAmount = 60000.0;        // Đảm bảo mức giá này lớn hơn (Giá hiện tại + Bước giá)
+        // Làm sạch và setup lại Database trước MỖI bài test
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+             
+            // 1. Đọc và chạy toàn bộ file quan_ly_dau_gia.sql để reset bảng và data gốc
+            String sqlPath = "src/test/resources/quan_ly_dau_gia.sql";
+            String sqlContent = new String(Files.readAllBytes(Paths.get(sqlPath)));
+            stmt.execute(sqlContent);
 
-//         try {
-//             // Chạy thẳng vào hệ thống thật
-//             boolean isSuccess = auctionService.placeBid(realBidderId, realSessionId, bidAmount);
+            // 2. Vì file SQL chưa có dữ liệu phiên đấu giá, ta phải tự tạo 1 phiên OPEN để test
+            // Lấy item_id = 1 (Tranh sơn dầu, giá khởi điểm 1500) của seller_minh (id=2)
+            String insertTestSession = "INSERT INTO auction_sessions " +
+                    "(session_id, owner_id, item_id, starting_price, step_price, status) " +
+                    "VALUES (1, 2, 1, 1500, 100, 'OPEN')";
+            stmt.executeUpdate(insertTestSession);
             
-//             // Dùng JUnit để chốt kết quả: Kỳ vọng là TRUE
-//             assertTrue(isSuccess, "Lỗi: Đặt giá thất bại. Hãy kiểm tra lại số dư hoặc trạng thái phiên trong DB.");
+            System.out.println("🔧 Đã reset Database và tạo Phiên đấu giá mẫu thành công!");
 
-//             // Nếu code chạy đến dòng này, tức là assertTrue đã pass (màu xanh)
-//             System.out.println("✅ Đặt giá THÀNH CÔNG! Hãy mở MySQL lên để kiểm tra:");
-//             System.out.println(" - Bảng 'users': Tiền của user ID " + realBidderId + " đã bị trừ chưa?");
-//             System.out.println(" - Bảng 'bids': Đã có dòng lịch sử đặt giá " + bidAmount + " mới chưa?");
+        } catch (Exception e) {
+            fail("Lỗi Setup Database: Không thể đọc file SQL hoặc kết nối DB. " + e.getMessage());
+        }
+    }
+
+    @Test
+    @DisplayName("Test đặt giá thành công với Database thật")
+    public void testPlaceBidWithRealDatabase() {
+        System.out.println("Bắt đầu test đặt giá...");
+
+        // Dữ liệu lấy chuẩn theo bảng users trong quan_ly_dau_gia.sql
+        int realBidderId = 3;              // ID 3 là buyer_an, đang có 5000 tiền
+        String realSessionId = "1"; // ID phiên ta vừa tạo ở setup()
+        double bidAmount = 2000.0;         // Giá đặt (lớn hơn giá khởi điểm 1500)
+
+        try {
+            // Chạy thẳng vào hệ thống thật
+            boolean isSuccess = auctionService.placeBid(realBidderId, realSessionId, bidAmount);
             
-//         } catch (Exception e) {
-//             // Nếu có lỗi SQL hoặc lỗi code, đánh sập test ngay lập tức và in lỗi ra
-//             e.printStackTrace();
-//             fail("Test bị sập do Exception: " + e.getMessage());
-//         }
-//     }
-// }
+            // Dùng JUnit để chốt kết quả: Kỳ vọng là TRUE
+            assertTrue(isSuccess, "Lỗi: Đặt giá thất bại. Code Service đang có vấn đề!");
+
+            System.out.println("✅ Đặt giá THÀNH CÔNG! Nếu mở MySQL kiểm tra, bạn sẽ thấy:");
+            System.out.println(" - Bảng 'users': Tiền của buyer_an (ID 3) đã bị trừ/đóng băng.");
+            System.out.println(" - Bảng 'bids': Đã có dòng lịch sử đặt giá 2000.0 cho SS_TEST_01.");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Test bị sập do Exception: " + e.getMessage());
+        }
+    }
+}
