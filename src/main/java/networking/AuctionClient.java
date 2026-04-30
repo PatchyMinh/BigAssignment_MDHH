@@ -1,5 +1,10 @@
 package networking;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -21,7 +26,7 @@ public class AuctionClient {
     public static void main(String[] args) {
         // 1. In lời chào và hướng dẫn sử dụng
         System.out.println("CHÀO MỪNG ĐẾN VỚI SÀN ĐẤU GIÁ TRỰC TUYẾN");
-        System.out.println("Các lệnh: bid <sessionId> <giá> | exit");
+        System.out.println("Các lệnh: bid <sessionId> <giá> | watch <sessionId> | exit");
 
         // 2. Vòng lặp chính: đọc lệnh người dùng và xử lý
         while (true) {
@@ -40,7 +45,16 @@ public class AuctionClient {
                     System.out.println("Sai định dạng lệnh. Sử dụng: bid <sessionId> <userId> <amount>");
                 }
             }
-     }
+            if (input.startsWith("watch")) {
+                String[] parts = input.split("\\s+");
+                if (parts.length == 2) {
+                    String sessionId = parts[1];
+                    startRealtimeListener(sessionId);
+                } else {
+                    System.out.println("Sai định dạng lệnh. Sử dụng: watch <sessionId>");
+                }
+            }
+        }
 
         System.out.println("Cảm ơn bạn đã tham gia. Tạm biệt!");
     }
@@ -70,4 +84,33 @@ public class AuctionClient {
             System.out.println("Lỗi khi kết nối tới server: " + e.getMessage());
         }
     }
+    /**
+      * Khởi động "Người lắng nghe" thời gian thực.
+      * Chạy trong một thread riêng để không chặn giao diện nhập lệnh chính.
+    */
+private static void startRealtimeListener(String sessionId) {
+    new Thread(() -> {
+        // 1. Kết nối tới AuctionFeedServer
+        try (Socket socket = new Socket("localhost", 8081);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+
+            // 2. Gửi lệnh JOIN <sessionId>
+            out.println("JOIN " + sessionId);
+            // cách hoạt động: "in" (BufferedReader) nhận lệnh từ client, gửi lên server, "out" (PrintWriter) sẽ in ra thông báo.
+            // sau đó server nhận lệnh, thêm client vào phòng đấu giá tương ứng.
+            System.out.println("[Hệ thống] Đã tham gia phòng đấu giá: " + sessionId);
+
+            // 3. Vòng lặp vô hạn để nhận thông báo
+            String message;
+            while ((message = in.readLine()) != null) {
+                // In thông báo từ server ra màn hình
+                System.out.println("\n>>> " + message);
+            }
+
+        } catch (IOException e) {
+            System.err.println("Mất kết nối đến kênh thông báo: " + e.getMessage());
+        }
+    }).start();
+}
 }
