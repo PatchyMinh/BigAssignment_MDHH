@@ -2,6 +2,7 @@ package service;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 import dao.AuctionSessionDAO;
 import dao.AuctionSessionDAOImpl;
@@ -11,6 +12,7 @@ import dao.UserDAO;
 import dao.UserDAOImpl;
 import model.AuctionSession;
 import model.Bid;
+import model.User;
 import utils.DBConnection;
 
 public class AuctionService {
@@ -27,6 +29,19 @@ public class AuctionService {
     /**
      * Luồng xử lý khi một người dùng bấm nút "Đặt giá"
      */
+
+    public List<AuctionSession> getAllSessions() {
+        return sessionDAO.getAllSessions();
+    }
+
+    public AuctionSession getSessionById(String sessionId) {
+        return sessionDAO.getSessionById(sessionId);
+    }
+
+    public User getUserById(int userId) {
+        return userDAO.getUserById(userId);
+    }
+
     public synchronized boolean placeBid(int currentUserId, String sessionId, double bidAmount) {
     Connection conn = null;
     try {
