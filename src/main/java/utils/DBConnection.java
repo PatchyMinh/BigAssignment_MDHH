@@ -1,4 +1,5 @@
 package utils;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -9,25 +10,32 @@ public class DBConnection {
     private static final String USER = "root";
     private static final String PASSWORD = "";
 
+    /**
+     * Phương thức trả về đối tượng Connection để thực thi SQL
+     */
     public static Connection getConnection() {
         Connection conn = null;
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            // Đăng ký Driver với DriverManager
+            Class.forName(DRIVER);
+
+            // Thực hiện kết nối
             conn = DriverManager.getConnection(URL, USER, PASSWORD);
-            System.out.println("✅ Kết nối Database thành công!");
-        } 
-        catch (ClassNotFoundException e) {
-            System.out.println("❌ Lỗi: Không tìm thấy JDBC Driver!");
+
+        } catch (ClassNotFoundException e) {
+            System.err.println("❌ Lỗi: Không tìm thấy MySQL Driver. Hãy kiểm tra lại thư viện .jar hoặc Dependency!");
             e.printStackTrace();
-        } 
-        catch (SQLException e) {
-            System.out.println("❌ Lỗi: Sai thông tin kết nối MySQL!");
+        } catch (SQLException e) {
+            System.err.println("❌ Lỗi: Không thể kết nối đến Database. Hãy kiểm tra XAMPP (Apache/MySQL)!");
             e.printStackTrace();
         }
         return conn;
-        }
+    }
 
+    // Hàm main để chạy thử xem kết nối đã thông chưa
     public static void main(String[] args) {
-        DBConnection.getConnection();
+        if (getConnection() != null) {
+            System.out.println("🎉 Chúc mừng! Kết nối Java với MySQL thành công.");
+        }
     }
 }
