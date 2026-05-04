@@ -7,6 +7,7 @@ import org.java_websocket.handshake.ClientHandshake;
 import service.AuctionService;
 import com.google.gson.Gson;
 import dto.BidRequest;
+import service.SettlementService;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AuctionServer extends WebSocketServer {
     // Khởi tạo service của bạn để gọi các hàm xử lý logic
+    private final SettlementService settlementService;
     private final Gson gson = new Gson();
     private final AuctionService auctionService;
     private final Map<String, Set<WebSocket>> sessionSubscribers = new ConcurrentHashMap<>();
@@ -23,6 +25,7 @@ public class AuctionServer extends WebSocketServer {
 
     public AuctionServer(int port) {
         super(new InetSocketAddress(port));
+        this.settlementService = new SettlementService();
         this.auctionService = new AuctionService();
     }
 
@@ -64,6 +67,31 @@ public class AuctionServer extends WebSocketServer {
             conn.send("{\"type\": \"ERROR\", \"message\": \"Đặt giá thất bại! Số dư không đủ hoặc giá không hợp lệ.\"}");
         }
     }
+    private void processSettlement(WebSocket conn, String sessionId) {
+        // 1. Gọi service xử lý logic kết thúc phiên
+        boolean isSuccess = settlementService.settleAuction(sessionId);
+
+        if (isSuccess) {
+            System.out.println("✅ Đã chốt phiên đấu giá thành công: " + sessionId);
+
+            // 2. Tạo JSON thông báo phiên đã đóng
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("type", "SESSION_CLOSED");
+            responseData.put("sessionId", sessionId);
+            responseData.put("message", "Phiên đấu giá đã kết thúc. Cảm ơn bạn đã tham gia!");
+
+            String jsonResponse = gson.toJson(responseData);
+
+            // 3. Phát thanh thông báo cho những người đang xem phiên này biết
+            if (feedServer != null) {
+                feedServer.notifyObservers(sessionId, jsonResponse);
+            }
+
+        } else {
+            // Gửi lỗi cho người vừa ra lệnh đóng phiên (có thể là admin)
+            conn.send("{\"type\": \"ERROR\", \"message\": \"Lỗi: Không thể kết thúc phiên đấu giá!\"}");
+        }
+    }
     @Override
     public void onMessage(WebSocket webSocket, String message) {
         System.out.println("📩 Nhận được tin nhắn từ client: " + message);
@@ -89,7 +117,10 @@ public class AuctionServer extends WebSocketServer {
                     BidRequest request = gson.fromJson(jsonObject, BidRequest.class);
                     processBid(webSocket, request); // Chuyển logic đặt giá vào hàm riêng cho gọn
                     break;
-
+                case "SETTLE" :
+                    String settleSessionId = jsonObject.get("sessionId").getAsString();
+                    processSettlement(webSocket, settleSessionId);
+                    break;
                 default:
                     System.out.println("Không nhận diện được loại tin nhắn: " + type);
             }
