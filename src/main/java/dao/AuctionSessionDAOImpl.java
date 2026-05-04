@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 import model.AuctionSession;
@@ -122,6 +123,28 @@ public class AuctionSessionDAOImpl implements AuctionSessionDAO {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public List<AuctionSession> getAllSessions() {
+        List<AuctionSession> list = new ArrayList<>();
+        String sql = "SELECT session_id FROM auction_sessions"; // Lấy các ID hiện có
+
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                // Tận dụng hàm getSessionById để lấy full thông tin từng phiên
+                AuctionSession session = getSessionById(rs.getString("session_id"));
+                if (session != null) {
+                    list.add(session);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     // =========================================================================
