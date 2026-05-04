@@ -5,8 +5,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnection {
-    // Thông số mặc định của XAMPP
-    private static final String URL = "jdbc:mysql://localhost:3306/auction_system_db";
+    // 1. Thông tin cấu hình kết nối
+    // Thay "quan_ly_dau_gia" bằng tên Database bạn đã tạo trong phpMyAdmin
+    private static final String URL = "jdbc:mysql://localhost:3306/quan_ly_dau_gia?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
     private static final String USER = "root";
     private static final String PASSWORD = ""; // Mặc định XAMPP để trống mật khẩu
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
