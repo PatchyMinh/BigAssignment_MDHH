@@ -34,7 +34,12 @@ public class AuctionServer extends WebSocketServer {
         this.settlementService = new SettlementService();
         this.auctionService = new AuctionService();
     }
-
+    /**
+    * onOpen: Khi có một kết nối WebSocket mới được mở, phương thức này sẽ được gọi.
+    * @param webSocket: Đối tượng WebSocket đại diện cho kết nối mới.
+    * @param clientHandshake: Chứa thông tin về handshake của kết nối, có thể dùng để xác thực hoặc lấy thông tin client nếu cần.
+    * (handshake: quá trình thiết lập kết nối WebSocket, bao gồm việc trao đổi thông tin giữa client và server để xác nhận kết nối) 
+    */
     @Override
     public void onOpen(WebSocket webSocket, ClientHandshake clientHandshake) {
         System.out.println("🟢 Có người dùng mới kết nối: " + webSocket.getRemoteSocketAddress());
@@ -53,6 +58,11 @@ public class AuctionServer extends WebSocketServer {
             subscribers.remove(conn);
         }
     }
+    /**
+     * Xử lý logic đặt giá khi nhận được yêu cầu từ client.
+     * @param conn: Kết nối WebSocket của client gửi yêu cầu đặt giá
+     * @param request: Đối tượng chứa thông tin về yêu cầu đặt giá, bao gồm userId, sessionId và bidAmount
+     */
     private void processBid(WebSocket conn, BidRequest request) {
         // 1. Gọi service xử lý logic đấu giá
         boolean isSuccess = auctionService.placeBid(
@@ -79,6 +89,11 @@ public class AuctionServer extends WebSocketServer {
             conn.send("{\"type\": \"ERROR\", \"message\": \"Đặt giá thất bại! Số dư không đủ hoặc giá không hợp lệ.\"}");
         }
     }
+    /**
+     * Xử lý logic kết thúc phiên đấu giá khi nhận được yêu cầu từ client (tự động).
+     * @param conn: Kết nối WebSocket của client gửi yêu cầu kết thúc phiên
+     * @param sessionId: ID của phiên đấu giá cần kết thúc
+     */
     private void processSettlement(WebSocket conn, String sessionId) {
         // 1. Gọi service xử lý logic kết thúc phiên
         boolean isSuccess = settlementService.settleAuction(sessionId);
@@ -104,6 +119,14 @@ public class AuctionServer extends WebSocketServer {
             conn.send("{\"type\": \"ERROR\", \"message\": \"Lỗi: Không thể kết thúc phiên đấu giá!\"}");
         }
     }
+    /**
+     * onMessage: Khi server nhận được một tin nhắn từ client, phương thức này sẽ được gọi.
+     * @param webSocket: Đối tượng WebSocket đại diện cho kết nối gửi tin nhắn.
+     * @param message: Nội dung tin nhắn nhận được, thường là một chuỗi JSON chứa thông tin về hành động mà client muốn thực hiện (ví dụ: đặt giá, tham gia phiên đấu giá, v.v.).
+     * Phương thức này sẽ phân tích nội dung tin nhắn, xác định loại hành động và gọi các hàm xử lý logic tương ứng trong service của bạn để thực hiện hành động đó. 
+     * Sau khi xử lý, server có thể gửi phản hồi hoặc thông báo đến các client khác nếu cần thiết.
+     * (như vòng main của server để liên tục lắng nghe và xử lý các yêu cầu từ client)
+     */
     @Override
     public void onMessage(WebSocket webSocket, String message) {
         System.out.println("📩 Nhận được tin nhắn từ client: " + message);

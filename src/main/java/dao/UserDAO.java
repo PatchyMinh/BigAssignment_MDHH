@@ -27,7 +27,9 @@ public interface UserDAO {
     // Dùng khi đang ở giữa một Transaction (ví dụ: Service đang trừ tiền thì cần check lại User)
     User getUserById(Connection conn, int id) throws SQLException; 
 
+    User getUserByUsername(String username);
 
+    User getUserByUsername(Connection conn, String username) throws SQLException;
     // =========================================================================
     // NHÓM 3: CÁC HÀM CẬP NHẬT TRẠNG THÁI / THÔNG TIN (Cần cả 2 phiên bản)
     // =========================================================================
