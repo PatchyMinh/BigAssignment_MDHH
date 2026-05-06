@@ -1,4 +1,5 @@
 package model;
+import java.io.IOException;
 import java.time.LocalDate;
 
 public class Arts extends Items{

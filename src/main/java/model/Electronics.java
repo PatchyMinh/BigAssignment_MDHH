@@ -1,4 +1,7 @@
 package model;
+
+import java.io.IOException;
+
 public class Electronics extends Items{
     private final int warranty;
     private final String brand;

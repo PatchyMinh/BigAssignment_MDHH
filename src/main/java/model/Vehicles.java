@@ -1,10 +1,13 @@
 package model;
+
+import java.io.IOException;
+
 public class Vehicles extends Items{
     private final String brand;
     private final int mileage;
     private final String vehicleID;
 
-    public Vehicles(int itemID, String owner, double startingPrice, String description, String brand, int mileage, String vehicleID) {
+    public Vehicles(int itemID, String owner, double startingPrice, String description, String brand, int mileage, String vehicleID){
         super(itemID, owner, startingPrice, description);
         this.brand = brand;
         this.mileage = mileage;

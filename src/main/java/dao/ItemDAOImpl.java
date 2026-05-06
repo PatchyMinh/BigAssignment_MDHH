@@ -9,8 +9,8 @@ public class ItemDAOImpl implements ItemDAO {
     @Override
     public void addItem(Items item) {
         String sql = "INSERT INTO items (item_type, owner, starting_price, description, " +
-                "artist_name, release_date, warranty, brand, mileage, vehicle_id_plate) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "artist_name, release_date, warranty, brand, mileage, vehicle_id_plate, avatar) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -18,6 +18,7 @@ public class ItemDAOImpl implements ItemDAO {
             ps.setString(2, item.getOwner());
             ps.setDouble(3, item.getStartingPrice());
             ps.setString(4, item.getDescription());
+            ps.setBlob(11, (Blob) item.getAvatar());
 
             if (item instanceof Arts) {
                 Arts art = (Arts) item;

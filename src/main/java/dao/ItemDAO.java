@@ -7,5 +7,4 @@ public interface ItemDAO {
 
     Items getItemById(int id);
 
-
 }

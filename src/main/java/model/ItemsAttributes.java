@@ -4,6 +4,7 @@ package model;
 // Nhược điểm hiện tại: Có thể tạo ra nhiều giá trị null với các thuộc tính không tương thích.
 // Nên refactor sang Builder Pattern (Creational Pattern) để tối ưu việc khởi tạo.
 
+import java.awt.image.BufferedImage;
 import java.time.LocalDate;
 
 public class ItemsAttributes {
@@ -11,6 +12,7 @@ public class ItemsAttributes {
     private String owner;
     private double startingPrice;
     private String description;
+    private BufferedImage avatar;
 
     // Thuoc tinh rieng cho Arts
     private String artistName;
