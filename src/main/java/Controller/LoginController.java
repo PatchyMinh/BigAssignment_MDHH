@@ -5,11 +5,19 @@ import dao.UserDAO;
 import dao.UserDAOImpl;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import Exception.*;
+import javafx.stage.Stage;
 import org.slf4j.*;
+
+import java.io.IOException;
+
 public class LoginController {
 
     UserDAO login = new UserDAOImpl();
@@ -102,8 +110,16 @@ public class LoginController {
     }
 
     @FXML
-    void onhandleUp(ActionEvent event) {
-
+    void onhandleUp(ActionEvent event) throws IOException {
+        try{
+            Parent root = FXMLLoader.load(getClass().getResource("Register.fxml"));
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.show();
+        } catch ( IOException e){
+            e.printStackTrace();
+        }
     }
 
 }
