@@ -1,21 +1,24 @@
 package server;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.java_websocket.server.WebSocketServer;
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.ClientHandshake;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import service.AuctionService;
-import com.google.gson.Gson;
-import dto.BidRequest;
-import service.SettlementService;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.java_websocket.WebSocket;
+import org.java_websocket.handshake.ClientHandshake;
+import org.java_websocket.server.WebSocketServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import dto.BidRequest;
+import service.AuctionService;
+import service.SettlementService;
 
 public class AuctionServer extends WebSocketServer {
     private static final Logger logger = LoggerFactory.getLogger(AuctionServer.class);
@@ -34,12 +37,18 @@ public class AuctionServer extends WebSocketServer {
 
     @Override
     public void onOpen(WebSocket webSocket, ClientHandshake clientHandshake) {
-        logger.error("🟢 Có người dùng mới kết nối: " + webSocket.getRemoteSocketAddress());
+        System.out.println("🟢 Có người dùng mới kết nối: " + webSocket.getRemoteSocketAddress());
     }
-
+    /**
+     * onClose:
+     * @param conn: Kết nối WebSocket bị đóng
+     * @param requestCode: Mã yêu cầu đóng kết nối (nếu có)
+     * @param reason: Lý do đóng kết nối
+     * @param remote: true nếu kết nối bị đóng từ phía client, false nếu từ phía server
+     */
     @Override
-    public void onClose(WebSocket conn, int i, String s, boolean b) {
-        logger.error("🔴 Người dùng đã ngắt kết nối: " + conn.getRemoteSocketAddress());
+    public void onClose(WebSocket conn, int requestCode, String reason, boolean remote) {
+        System.out.println("🔴 Người dùng đã ngắt kết nối: " + conn.getRemoteSocketAddress());
         for (Set<WebSocket> subscribers : sessionSubscribers.values()) {
             subscribers.remove(conn);
         }
@@ -53,7 +62,7 @@ public class AuctionServer extends WebSocketServer {
         );
 
         if (isSuccess) {
-            logger.error("✅ Đặt giá thành công!");
+            System.out.println("✅ Đặt giá thành công!");
 
             // 2. Tạo JSON thông báo giá mới
             Map<String, Object> responseData = new HashMap<>();
@@ -75,7 +84,7 @@ public class AuctionServer extends WebSocketServer {
         boolean isSuccess = settlementService.settleAuction(sessionId);
 
         if (isSuccess) {
-            logger.error("✅ Đã chốt phiên đấu giá thành công: " + sessionId);
+            System.out.println("✅ Đã chốt phiên đấu giá thành công: " + sessionId);
 
             // 2. Tạo JSON thông báo phiên đã đóng
             Map<String, Object> responseData = new HashMap<>();
@@ -95,10 +104,9 @@ public class AuctionServer extends WebSocketServer {
             conn.send("{\"type\": \"ERROR\", \"message\": \"Lỗi: Không thể kết thúc phiên đấu giá!\"}");
         }
     }
-
     @Override
     public void onMessage(WebSocket webSocket, String message) {
-        logger.error("📩 Nhận được tin nhắn từ client: " + message);
+        System.out.println("📩 Nhận được tin nhắn từ client: " + message);
         try {
             // 1. Phân tích chuỗi JSON thành JsonObject tổng quát
             JsonObject jsonObject = JsonParser.parseString(message).getAsJsonObject();
@@ -113,7 +121,7 @@ public class AuctionServer extends WebSocketServer {
                     String joinSessionId = jsonObject.get("sessionId").getAsString();
                     sessionSubscribers.computeIfAbsent(joinSessionId, k -> ConcurrentHashMap.newKeySet()).add(webSocket);
 
-                    logger.error("👤 Người dùng " + webSocket.getRemoteSocketAddress() + " đã bắt đầu xem phiên: " + joinSessionId);
+                    System.out.println("👤 Người dùng " + webSocket.getRemoteSocketAddress() + " đã bắt đầu xem phiên: " + joinSessionId);
                     break;
 
                 case "BID":
@@ -126,7 +134,7 @@ public class AuctionServer extends WebSocketServer {
                     processSettlement(webSocket, settleSessionId);
                     break;
                 default:
-                    logger.error("Không nhận diện được loại tin nhắn: " + type);
+                    System.out.println("Không nhận diện được loại tin nhắn: " + type);
             }
 
         } catch (Exception e) {
@@ -137,14 +145,13 @@ public class AuctionServer extends WebSocketServer {
 
     @Override
     public void onError(WebSocket webSocket, Exception e) {
-        logger.error("❌ Đã xảy ra lỗi trên kết nối: " + webSocket.getRemoteSocketAddress());
-        e.printStackTrace();
+        logger.error("❌ Đã xảy ra lỗi trên kết nối: " + webSocket.getRemoteSocketAddress(), e);
     }
 
     @Override
     public void onStart() {
         this.feedServer = new AuctionFeedServer();
-        logger.error("🚀 Auction Server đã khởi động thành công trên port: " + getPort());
+        System.out.println("🚀 Auction Server đã khởi động thành công trên port: " + getPort());
     }
 
 }
