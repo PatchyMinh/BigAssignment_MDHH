@@ -193,4 +193,31 @@ public class UserDAOImpl implements UserDAO {
         }
         return null;
     }
+    @Override
+    public User getUserByUserName(String Username) {
+        String sql = "SELECT * FROM users WHERE username = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, Username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("real_name"),
+                            rs.getString("email"),
+                            rs.getString("phone_number"),
+                            User.Role.valueOf(rs.getString("role").toUpperCase()),
+                            rs.getDouble("balance"),
+                            rs.getDouble("frozen_balance")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
