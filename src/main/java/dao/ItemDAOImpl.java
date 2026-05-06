@@ -8,6 +8,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import model.Arts;
 import model.Electronics;
 import model.Items;
@@ -15,7 +18,8 @@ import model.Vehicles;
 import utils.DBConnection;
 
 public class ItemDAOImpl implements ItemDAO {
-    DBConnection dbConnection = new DBConnection();
+
+    private static final Logger logger = LoggerFactory.getLogger(ItemDAOImpl.class);
 
     // =========================================================================
     // 1. THÊM SẢN PHẨM (NẠP CHỒNG)
@@ -38,7 +42,6 @@ public class ItemDAOImpl implements ItemDAO {
                 ps.setString(1, "Arts");
                 ps.setString(5, art.getArtistName());
                 
-                // Tránh lỗi NullPointerException nếu bức tranh không có ngày phát hành
                 LocalDate rd = art.getReleaseDate();
                 if (rd != null) {
                     ps.setDate(6, java.sql.Date.valueOf(rd));
@@ -76,7 +79,7 @@ public class ItemDAOImpl implements ItemDAO {
             if (affectedRows > 0) {
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     if (rs.next()) {
-                        item.setItemID(rs.getInt(1)); // Gán ngược ID do DB tự sinh vào Object
+                        item.setItemID(rs.getInt(1));
                     }
                 }
             }
@@ -85,10 +88,10 @@ public class ItemDAOImpl implements ItemDAO {
 
     @Override
     public void addItem(Items item) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             addItem(conn, item);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("❌ Lỗi khi thêm item: {}", e.getMessage(), e);
         }
     }
 
@@ -112,39 +115,34 @@ public class ItemDAOImpl implements ItemDAO {
 
     @Override
     public Items getItemById(int id) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return getItemById(conn, id);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi lấy item theo ID {}: {}", id, e.getMessage(), e);
             return null;
         }
     }
 
     // =========================================================================
     // 3. CẬP NHẬT CHỦ SỞ HỮU MỚI CHO SẢN PHẨM (NẠP CHỒNG)
-    // Dùng khi chốt đơn thành công ở SettlementService
     // =========================================================================
 
     @Override
     public boolean updateItemOwner(Connection conn, int itemId, int newOwnerId) throws SQLException {
-        // Thủ thuật: Dùng truy vấn lồng (SELECT) để lấy username của người thắng (dựa vào ID)
-        // và gán thẳng vào cột 'owner' của món hàng.
         String sql = "UPDATE items SET owner = (SELECT username FROM users WHERE id = ?) WHERE item_id = ?";
-        
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, newOwnerId); // ID của người thắng (Buyer)
-            pstmt.setInt(2, itemId);     // ID của món hàng
-            
+            pstmt.setInt(1, newOwnerId);
+            pstmt.setInt(2, itemId);
             return pstmt.executeUpdate() > 0;
         }
     }
 
     @Override
     public boolean updateItemOwner(int itemId, int newOwnerId) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return updateItemOwner(conn, itemId, newOwnerId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi cập nhật chủ sở hữu cho item {}: {}", itemId, e.getMessage(), e);
             return false;
         }
     }
@@ -153,8 +151,6 @@ public class ItemDAOImpl implements ItemDAO {
     // HÀM TIỆN ÍCH (Utility) DÙNG NỘI BỘ TRONG DAO
     // =========================================================================
 
-    // Hàm này giúp gom code tạo đối tượng Items lại 1 chỗ, tái sử dụng nếu sau này 
-    // bạn viết thêm hàm getAllItems() hoặc searchItems()
     private Items extractItemFromResultSet(ResultSet rs) throws SQLException {
         int id = rs.getInt("item_id");
         String type = rs.getString("item_type");

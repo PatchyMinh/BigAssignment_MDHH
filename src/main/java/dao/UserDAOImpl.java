@@ -8,11 +8,15 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import model.User;
 import utils.DBConnection;
 
 public class UserDAOImpl implements UserDAO {
-    DBConnection dbConnection = new DBConnection();
+
+    private static final Logger logger = LoggerFactory.getLogger(UserDAOImpl.class);
 
     // =========================================================================
     // NHÓM 1: CÁC HÀM ĐỌC/GHI ĐỘC LẬP
@@ -21,7 +25,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public boolean register(User user) {
         String sql = "INSERT INTO users (username, password, real_name, email, phone_number, role, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setString(1, user.getUsername());
@@ -41,7 +45,7 @@ public class UserDAOImpl implements UserDAO {
                 return true;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi đăng ký user {}: {}", user.getUsername(), e.getMessage(), e);
         }
         return false;
     }
@@ -49,7 +53,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public User login(String username, String password) {
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, username);
@@ -61,7 +65,7 @@ public class UserDAOImpl implements UserDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi login user {}: {}", username, e.getMessage(), e);
         }
         return null;
     }
@@ -70,7 +74,7 @@ public class UserDAOImpl implements UserDAO {
     public List<User> getAllUsers() {
         List<User> userList = new ArrayList<>();
         String sql = "SELECT * FROM users";
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             
@@ -78,7 +82,7 @@ public class UserDAOImpl implements UserDAO {
                 userList.add(extractUserFromResultSet(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi lấy danh sách users: {}", e.getMessage(), e);
         }
         return userList;
     }
@@ -87,7 +91,7 @@ public class UserDAOImpl implements UserDAO {
     public List<User> searchUsers(String keyword) {
         List<User> userList = new ArrayList<>();
         String sql = "SELECT * FROM users WHERE username LIKE ?";
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, "%" + keyword + "%");
@@ -97,7 +101,7 @@ public class UserDAOImpl implements UserDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi tìm kiếm users với keyword {}: {}", keyword, e.getMessage(), e);
         }
         return userList;
     }
@@ -105,7 +109,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public int countUsersByStatus(int status) {
         String sql = "SELECT COUNT(*) FROM users WHERE status = ?";
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setInt(1, status);
@@ -113,7 +117,7 @@ public class UserDAOImpl implements UserDAO {
                 if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi đếm users theo status {}: {}", status, e.getMessage(), e);
         }
         return 0;
     }
@@ -122,7 +126,6 @@ public class UserDAOImpl implements UserDAO {
     // NHÓM 2: CÁC HÀM TRUY XUẤT CƠ BẢN (NẠP CHỒNG)
     // =========================================================================
 
-    // 2.1 Bản dùng trong Transaction (Không bắt lỗi, quăng ra ngoài cho Service bắt)
     @Override
     public User getUserById(Connection conn, int id) throws SQLException {
         String sql = "SELECT * FROM users WHERE id = ?";
@@ -137,22 +140,50 @@ public class UserDAOImpl implements UserDAO {
         return null;
     }
 
-    // 2.2 Bản gọi độc lập
     @Override
     public User getUserById(int id) {
-        try (Connection conn = dbConnection.getConnection()) {
-            return getUserById(conn, id); // Tái sử dụng logic hàm trên
+        try (Connection conn = DBConnection.getConnection()) {
+            return getUserById(conn, id);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi lấy user theo ID {}: {}", id, e.getMessage(), e);
             return null;
         }
     }
 
+    @Override
+    public User getUserByUsername(String username) {
+        String sql = "SELECT * FROM users WHERE username = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractUserFromResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Lỗi khi lấy user theo username {}: {}", username, e.getMessage(), e);
+        }
+        return null;
+    }
+    @Override
+    public User getUserByUsername(Connection conn, String username) throws SQLException {
+        String sql = "SELECT * FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractUserFromResultSet(rs);
+                }
+            }
+        }
+        return null;
+    }
     // =========================================================================
     // NHÓM 3: CÁC HÀM CẬP NHẬT TRẠNG THÁI / THÔNG TIN (NẠP CHỒNG)
     // =========================================================================
 
-    // 3.1 Bản dùng trong Transaction
     @Override
     public boolean updateStatus(Connection conn, int userId, String status) throws SQLException {
         String sql = "UPDATE users SET status = ? WHERE id = ?";
@@ -163,18 +194,16 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
-    // 3.2 Bản gọi độc lập
     @Override
     public boolean updateStatus(int userId, String status) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return updateStatus(conn, userId, status);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi cập nhật status user {}: {}", userId, e.getMessage(), e);
             return false;
         }
     }
 
-    // 3.3 Bản dùng trong Transaction
     @Override
     public boolean updateBalance(Connection conn, int userId, double newBalance, double newFrozenBalance) throws SQLException {
         String sql = "UPDATE users SET balance = ?, frozen_balance = ? WHERE id = ?";
@@ -186,23 +215,20 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
-    // 3.4 Bản gọi độc lập
     @Override
     public boolean updateBalance(int userId, double newBalance, double newFrozenBalance) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return updateBalance(conn, userId, newBalance, newFrozenBalance);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi cập nhật balance user {}: {}", userId, e.getMessage(), e);
             return false;
         }
     }
 
     // =========================================================================
     // NHÓM 4: CÁC HÀM GIAO DỊCH TIỀN BẠC ATOMIC (NẠP CHỒNG)
-    // Lưu ý: Đã sửa frozenBalance thành frozen_balance cho đúng chuẩn Database
     // =========================================================================
 
-    // --- FREEZE MONEY ---
     @Override
     public boolean freezeMoneyAtomic(Connection conn, int userId, double amount) throws SQLException {
         String sql = "UPDATE users SET balance = balance - ?, frozen_balance = frozen_balance + ? WHERE id = ? AND balance >= ?";
@@ -217,12 +243,14 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public boolean freezeMoneyAtomic(int userId, double amount) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return freezeMoneyAtomic(conn, userId, amount);
-        } catch (SQLException e) { e.printStackTrace(); return false; }
+        } catch (SQLException e) {
+            logger.error("Lỗi freezeMoneyAtomic user {} amount {}: {}", userId, amount, e.getMessage(), e);
+            return false;
+        }
     }
 
-    // --- REFUND MONEY ---
     @Override
     public boolean refundMoneyAtomic(Connection conn, int userId, double amount) throws SQLException {
         String sql = "UPDATE users SET balance = balance + ?, frozen_balance = frozen_balance - ? WHERE id = ?";
@@ -236,12 +264,14 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public boolean refundMoneyAtomic(int userId, double amount) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return refundMoneyAtomic(conn, userId, amount);
-        } catch (SQLException e) { e.printStackTrace(); return false; }
+        } catch (SQLException e) {
+            logger.error("Lỗi refundMoneyAtomic user {} amount {}: {}", userId, amount, e.getMessage(), e);
+            return false;
+        }
     }
 
-    // --- DEDUCT FROZEN MONEY ---
     @Override
     public boolean deductFrozenMoneyAtomic(Connection conn, int userId, double amount) throws SQLException {
         String sql = "UPDATE users SET frozen_balance = frozen_balance - ? WHERE id = ? AND frozen_balance >= ?";
@@ -255,12 +285,14 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public boolean deductFrozenMoneyAtomic(int userId, double amount) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return deductFrozenMoneyAtomic(conn, userId, amount);
-        } catch (SQLException e) { e.printStackTrace(); return false; }
+        } catch (SQLException e) {
+            logger.error("Lỗi deductFrozenMoneyAtomic user {} amount {}: {}", userId, amount, e.getMessage(), e);
+            return false;
+        }
     }
 
-    // --- ADD MONEY ---
     @Override
     public boolean addMoneyAtomic(Connection conn, int userId, double amount) throws SQLException {
         String sql = "UPDATE users SET balance = balance + ? WHERE id = ?";
@@ -273,16 +305,18 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public boolean addMoneyAtomic(int userId, double amount) {
-        try (Connection conn = dbConnection.getConnection()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return addMoneyAtomic(conn, userId, amount);
-        } catch (SQLException e) { e.printStackTrace(); return false; }
+        } catch (SQLException e) {
+            logger.error("Lỗi addMoneyAtomic user {} amount {}: {}", userId, amount, e.getMessage(), e);
+            return false;
+        }
     }
 
     // =========================================================================
     // HÀM TIỆN ÍCH (Utility) DÙNG NỘI BỘ TRONG DAO
     // =========================================================================
     
-    // Hàm này giúp gom code tạo đối tượng User lại 1 chỗ, tránh lặp lại ở hàm login, getAllUsers, searchUsers...
     private User extractUserFromResultSet(ResultSet rs) throws SQLException {
         return new User(
                 rs.getInt("id"),

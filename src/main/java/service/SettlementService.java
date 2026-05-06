@@ -3,6 +3,9 @@ package service;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dao.AuctionSessionDAO;
 import dao.AuctionSessionDAOImpl;
 import dao.BidDAO;
@@ -16,11 +19,11 @@ import model.Bid;
 import utils.DBConnection;
 
 public class SettlementService {
+    private static final Logger logger = LoggerFactory.getLogger(SettlementService.class);
     private AuctionSessionDAO sessionDAO = new AuctionSessionDAOImpl();
     private BidDAO bidDAO = new BidDAOImpl();
     private UserDAO userDAO = new UserDAOImpl();
-    private ItemDAO itemDAO = new ItemDAOImpl(); // Cần gọi ItemDAO để đổi chủ
-    private DBConnection dbConnection = new DBConnection();
+    private ItemDAO itemDAO = new ItemDAOImpl();
 
     /**
      * Hàm xử lý kết thúc phiên đấu giá
@@ -28,56 +31,54 @@ public class SettlementService {
     public boolean settleAuction(String sessionId) {
         Connection conn = null;
         try {
-            conn = dbConnection.getConnection();
-            conn.setAutoCommit(false); // Bắt đầu Transaction, không ghi cứng từ đầu, để có thể rollback nếu có lỗi
+            conn = DBConnection.getConnection();
+            conn.setAutoCommit(false);
 
-            // 1. Kiểm tra thông tin phiên
             AuctionSession session = sessionDAO.getSessionById(conn, sessionId);
             if (session == null || session.getStatus() != AuctionSession.Status.OPEN) {
-                System.out.println("Lỗi: Phiên đấu giá không tồn tại hoặc đã bị đóng!");
+                logger.warn("Phiên đấu giá {} không tồn tại hoặc không ở trạng thái OPEN", sessionId);
                 return false;
             }
 
-            // 2. Lấy người trả giá cao nhất
             Bid winningBid = bidDAO.getHighestBid(conn, sessionId);
 
             if (winningBid != null) {
-                // ==========================================
-                // KỊCH BẢN 1: CÓ NGƯỜI THẮNG CUỘC
-                // ==========================================
                 int buyerId = winningBid.getBidder().getID();
                 int sellerId = session.getSeller().getID();
                 double finalPrice = winningBid.getAmount();
+
                 userDAO.deductFrozenMoneyAtomic(conn, buyerId, finalPrice);
                 userDAO.addMoneyAtomic(conn, sellerId, finalPrice);
                 itemDAO.updateItemOwner(conn, session.getItem().getItemID(), buyerId);
 
-                System.out.println("Đấu giá thành công! Hàng đã về tay người mua ID: " + buyerId);
+                logger.info("Đấu giá thành công! Phiên {}, giá {}, người mua ID: {}", sessionId, finalPrice, buyerId);
             } else {
-                // ==========================================
-                // KỊCH BẢN 2: PHIÊN Ế (KHÔNG CÓ AI ĐẶT GIÁ)
-                // ==========================================
-                System.out.println("Phiên đấu giá kết thúc. Không có ai đặt giá.");
+                logger.info("Phiên đấu giá {} kết thúc. Không có ai đặt giá.", sessionId);
             }
 
             sessionDAO.updateSessionStatusAtomic(conn, sessionId, AuctionSession.Status.CLOSED);
-
             conn.commit();
             return true;
 
         } catch (Exception e) {
             if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+                try {
+                    conn.rollback();
+                    logger.warn("Đã rollback transaction cho session {}", sessionId);
+                } catch (SQLException ex) {
+                    logger.error("Lỗi khi rollback transaction: {}", ex.getMessage(), ex);
+                }
             }
-            System.out.println("Lỗi hệ thống: Đã hoàn tác toàn bộ quá trình chốt đơn.");
-            e.printStackTrace();
+            logger.error("Lỗi hệ thống khi chốt phiên {}: {}", sessionId, e.getMessage(), e);
             return false;
         } finally {
             if (conn != null) {
-                try { 
+                try {
                     conn.setAutoCommit(true);
-                    conn.close(); 
-                } catch (SQLException ex) { ex.printStackTrace(); }
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.error("Lỗi khi đóng kết nối: {}", e.getMessage(), e);
+                }
             }
         }
     }
