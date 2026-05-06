@@ -13,10 +13,14 @@ import model.AuctionSession;
 import model.Bid;
 import model.Items;
 import model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import server.AuctionServer;
 import utils.DBConnection;
 
 public class AuctionSessionDAOImpl implements AuctionSessionDAO {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuctionServer.class);
     private UserDAO userDAO = new UserDAOImpl();
     private DBConnection dbConnection = new DBConnection();
     private ItemDAO itemDAO = new ItemDAOImpl();
